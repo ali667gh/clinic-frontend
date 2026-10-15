@@ -43,7 +43,6 @@ export default function PatientsManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // فرم تمیزشده: فقط فیلدهای معتبر و لازم
   const [formData, setFormData] = useState({
     fullName: "",
     fileNumber: "",
@@ -58,15 +57,19 @@ export default function PatientsManagement() {
   const [page, setPage] = useState(1);
   const [totalFromServer, setTotalFromServer] = useState(0);
 
-  // دریافت لیست بیماران از سرور
+  // دریافت لیست بیماران از سرور (دریافت کل رکوردها با پر کردن per_page بزرگ در صورت نیاز)
   const fetchPatients = useCallback(async (searchTerm = "") => {
     try {
       setIsLoading(true);
       const response = await api.get("/patients", {
-        params: searchTerm ? { search: searchTerm } : {},
+        params: {
+          search: searchTerm || undefined,
+          per_page: 500, // برای اینکه تمام رکوردها رو بگیریم و فیلتر/صفحه‌بندی فرانت‌انْد دقیق کار کنه
+        },
       });
       const res = response.data;
 
+      // پشتیبانی از ساختارهای مختلف پاسخ لاراول (Pagination یا آرایه ساده)
       const rawList = Array.isArray(res?.data?.data)
         ? res.data.data
         : Array.isArray(res?.data)
@@ -75,8 +78,12 @@ export default function PatientsManagement() {
             ? res
             : [];
 
-      setPatients(rawList.map(normalizePatient));
-      setTotalFromServer(res?.data?.total ?? rawList.length);
+      const normalized = rawList.map(normalizePatient);
+      setPatients(normalized);
+
+      // تعیین تعداد کل واقعی از سرور
+      const total = res?.data?.total ?? res?.total ?? normalized.length;
+      setTotalFromServer(total);
     } catch (error) {
       console.error("خطا در دریافت لیست بیماران:", error);
       toast.error("خطا در دریافت لیست بیماران از سرور");
@@ -101,30 +108,20 @@ export default function PatientsManagement() {
 
   const validate = () => {
     const errs = {};
-
-    if (!formData.fullName.trim()) {
+    if (!formData.fullName.trim())
       errs.fullName = "نام و نام خانوادگی الزامی است";
-    }
-
-    if (!formData.fileNumber.trim()) {
+    if (!formData.fileNumber.trim())
       errs.fileNumber = "شماره پرونده الزامی است";
-    }
-
-    if (!/^\d{10}$/.test(formData.nationalId.trim())) {
+    if (!/^\d{10}$/.test(formData.nationalId.trim()))
       errs.nationalId = "کد ملی باید ۱۰ رقم باشد";
-    }
-
-    // موبایل اختیاری است؛ اما اگر وارد شد باید معتبر باشد
     if (formData.mobile.trim() && !/^09\d{9}$/.test(formData.mobile.trim())) {
       errs.mobile = "فرمت موبایل نامعتبر است (مثال: 09121234567)";
     }
-
     return errs;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const errs = validate();
     if (Object.keys(errs).length) {
       setErrors(errs);
@@ -141,14 +138,8 @@ export default function PatientsManagement() {
       };
 
       await api.post("/patients", payload);
-
       toast.success("بیمار با موفقیت ثبت شد");
-      setFormData({
-        fullName: "",
-        fileNumber: "",
-        nationalId: "",
-        mobile: "",
-      });
+      setFormData({ fullName: "", fileNumber: "", nationalId: "", mobile: "" });
       setErrors({});
       setPage(1);
       fetchPatients(search);
@@ -172,6 +163,7 @@ export default function PatientsManagement() {
     try {
       await api.delete(`/patients/${id}`);
       setPatients((prev) => prev.filter((p) => p.id !== id));
+      setTotalFromServer((prev) => Math.max(0, prev - 1));
       toast.success("بیمار حذف شد");
     } catch (error) {
       console.error("خطای حذف بیمار:", error);
@@ -245,7 +237,6 @@ export default function PatientsManagement() {
           <CardContent className="pt-5">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-                {/* نام و نام خانوادگی */}
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-700">
                     نام و نام خانوادگی <span className="text-red-500">*</span>
@@ -266,7 +257,6 @@ export default function PatientsManagement() {
                   )}
                 </div>
 
-                {/* شماره پرونده (اجباری) */}
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-700">
                     شماره پرونده <span className="text-red-500">*</span>
@@ -287,7 +277,6 @@ export default function PatientsManagement() {
                   )}
                 </div>
 
-                {/* کد ملی */}
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-700">
                     کد ملی <span className="text-red-500">*</span>
@@ -312,7 +301,6 @@ export default function PatientsManagement() {
                   )}
                 </div>
 
-                {/* شماره موبایل (اختیاری) */}
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-700">
                     شماره موبایل{" "}
@@ -461,20 +449,17 @@ export default function PatientsManagement() {
                         <td className="py-3 pr-2 font-bold text-slate-900">
                           {p.fullName}
                         </td>
-
                         <td className="px-2 py-3">
                           <span className="rounded bg-emerald-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-emerald-700 border border-emerald-200">
                             {p.fileNumber}
                           </span>
                         </td>
-
                         <td
                           className="px-2 py-3 font-mono text-slate-600"
                           dir="ltr"
                         >
                           {p.nationalId}
                         </td>
-
                         <td
                           className="px-2 py-3 font-mono text-slate-600"
                           dir="ltr"
@@ -485,11 +470,9 @@ export default function PatientsManagement() {
                             </span>
                           )}
                         </td>
-
                         <td className="px-2 py-3 text-slate-500">
                           {p.registeredAtFormatted}
                         </td>
-
                         <td className="py-3 pl-2 text-center">
                           <Button
                             variant="ghost"
@@ -517,12 +500,10 @@ export default function PatientsManagement() {
                   >
                     قبلی
                   </Button>
-
                   <span className="px-2 text-xs text-slate-500">
                     صفحه {safePage.toLocaleString("fa-IR")} از{" "}
                     {totalPages.toLocaleString("fa-IR")}
                   </span>
-
                   <Button
                     variant="outline"
                     size="sm"
