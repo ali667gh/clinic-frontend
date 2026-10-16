@@ -28,8 +28,6 @@ export default function PatientPortal() {
   const [data, setData] = useState(null);
 
   const baseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
-  // مسیر پایه برای دسترسی به فایل‌های public مثل لوگو
-  const publicUrl = baseUrl.replace(/\/api$/, "");
 
   useEffect(() => {
     if (isVerified && token) {
@@ -154,11 +152,11 @@ export default function PatientPortal() {
               {/* لوگوی مرکز آریتمی تهران */}
               <div className="bg-white p-2.5 rounded-2xl shadow-sm flex items-center justify-center">
                 <img
-                  src={`${publicUrl}/images/logo.png`}
+                  src="/images/logo.png"
                   alt="مرکز آریتمی تهران"
                   className="h-10 object-contain"
                   onError={(e) => {
-                    e.target.style.display = "none"; // اگر به هر دلیلی پیدا نشد مخفی شود
+                    e.target.style.display = "none";
                   }}
                 />
               </div>

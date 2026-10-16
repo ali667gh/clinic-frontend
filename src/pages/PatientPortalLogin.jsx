@@ -10,7 +10,6 @@ export default function PatientPortalLogin({ onVerified }) {
   const [error, setError] = useState("");
 
   const baseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
-  const publicUrl = baseUrl.replace(/\/api$/, "");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,7 +52,7 @@ export default function PatientPortalLogin({ onVerified }) {
           {/* جایگزینی آیکون با لوگوی مرکز آریتمی تهران */}
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-blue-50/80 border border-blue-100 p-3 mb-4 shadow-inner mx-auto">
             <img
-              src={`${publicUrl}/images/logo.png`}
+              src="/images/logo.png"
               alt="مرکز آریتمی تهران"
               className="max-h-full max-w-full object-contain"
               onError={(e) => {
