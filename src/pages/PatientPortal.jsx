@@ -28,6 +28,8 @@ export default function PatientPortal() {
   const [data, setData] = useState(null);
 
   const baseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+  // مسیر پایه برای دسترسی به فایل‌های public مثل لوگو
+  const publicUrl = baseUrl.replace(/\/api$/, "");
 
   useEffect(() => {
     if (isVerified && token) {
@@ -147,24 +149,34 @@ export default function PatientPortal() {
       <div className="max-w-3xl mx-auto space-y-6">
         {/* هدر پرتال */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
-          <div className="relative z-10 flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-emerald-100 text-sm font-medium mb-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-                <span>پرتال مراجعین و خدمات آنلاین</span>
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* لوگوی مرکز آریتمی تهران */}
+              <div className="bg-white p-2.5 rounded-2xl shadow-sm flex items-center justify-center">
+                <img
+                  src={`${publicUrl}/images/logo.png`}
+                  alt="مرکز آریتمی تهران"
+                  className="h-10 object-contain"
+                  onError={(e) => {
+                    e.target.style.display = "none"; // اگر به هر دلیلی پیدا نشد مخفی شود
+                  }}
+                />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                اسناد، فاکتور و نتایج آزمایش
-              </h1>
-              <p className="text-emerald-100/90 text-sm mt-1">
-                مجموعه درمانی و کلینیک تخصصی
-              </p>
+              <div>
+                <div className="flex items-center gap-2 text-emerald-100 text-xs sm:text-sm font-medium mb-1">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                  <span>پرتال مراجعین و خدمات آنلاین</span>
+                </div>
+                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                  اسناد، فاکتور و نتایج آزمایش
+                </h1>
+              </div>
             </div>
 
             <button
               onClick={handleLogout}
               title="خروج از پرونده"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs rounded-xl backdrop-blur-sm transition border border-white/20"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs rounded-xl backdrop-blur-sm transition border border-white/20 flex-shrink-0"
             >
               <LogOut className="w-4 h-4" />
               <span>خروج</span>

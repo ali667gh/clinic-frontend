@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { ShieldCheck, UserCheck, AlertCircle, Loader2 } from "lucide-react";
+import { UserCheck, AlertCircle, Loader2 } from "lucide-react";
 
 export default function PatientPortalLogin({ onVerified }) {
   const { token } = useParams();
@@ -10,6 +10,7 @@ export default function PatientPortalLogin({ onVerified }) {
   const [error, setError] = useState("");
 
   const baseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+  const publicUrl = baseUrl.replace(/\/api$/, "");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,8 +50,16 @@ export default function PatientPortalLogin({ onVerified }) {
     >
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 text-blue-600 mb-4 shadow-inner">
-            <ShieldCheck className="w-8 h-8" />
+          {/* جایگزینی آیکون با لوگوی مرکز آریتمی تهران */}
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-blue-50/80 border border-blue-100 p-3 mb-4 shadow-inner mx-auto">
+            <img
+              src={`${publicUrl}/images/logo.png`}
+              alt="مرکز آریتمی تهران"
+              className="max-h-full max-w-full object-contain"
+              onError={(e) => {
+                e.target.style.display = "none";
+              }}
+            />
           </div>
           <h1 className="text-2xl font-bold text-slate-800">
             پرتال مراجعین درمانگاه
@@ -77,7 +86,7 @@ export default function PatientPortalLogin({ onVerified }) {
                 type="text"
                 value={nationalCode}
                 onChange={(e) => setNationalCode(e.target.value)}
-                placeholder="مثال: 0250698404"
+                placeholder="کدملی"
                 maxLength={10}
                 className="w-full pl-4 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tracking-widest text-lg font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 autoFocus
