@@ -11,9 +11,18 @@ export default function PatientPortalLogin({ onVerified }) {
 
   const baseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
 
+  // تبدیل ارقام فارسی و عربی به انگلیسی
+  const normalizeDigits = (value) =>
+    value
+      .replace(/[۰-۹]/g, (digit) => "۰۱۲۳۴۵۶۷۸۹".indexOf(digit))
+      .replace(/[٠-٩]/g, (digit) => "٠١٢٣٤٥٦٧٨٩".indexOf(digit));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!nationalCode.trim()) {
+
+    const normalizedCode = normalizeDigits(nationalCode).trim();
+
+    if (!normalizedCode) {
       setError("لطفاً کد ملی خود را وارد نمایید.");
       return;
     }
@@ -23,11 +32,12 @@ export default function PatientPortalLogin({ onVerified }) {
 
     try {
       const response = await axios.post(`${baseUrl}/portal/${token}/verify`, {
-        national_code: nationalCode.trim(),
+        national_code: normalizedCode,
       });
 
       if (response.data.status === "success") {
-        sessionStorage.setItem(`portal_auth_${token}`, nationalCode.trim());
+        sessionStorage.setItem(`portal_auth_${token}`, normalizedCode);
+
         if (onVerified) {
           onVerified();
         }
@@ -49,7 +59,6 @@ export default function PatientPortalLogin({ onVerified }) {
     >
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
         <div className="text-center mb-8">
-          {/* جایگزینی آیکون با لوگوی مرکز آریتمی تهران */}
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-blue-50/80 border border-blue-100 p-3 mb-4 shadow-inner mx-auto">
             <img
               src="https://api.report-tehranep.site/images/logo.png"
@@ -57,6 +66,7 @@ export default function PatientPortalLogin({ onVerified }) {
               className="max-h-full max-w-full object-contain"
             />
           </div>
+
           <h1 className="text-2xl font-bold text-slate-800">
             پرتال مراجعین درمانگاه
           </h1>
@@ -77,13 +87,16 @@ export default function PatientPortalLogin({ onVerified }) {
             <label className="block text-sm font-medium text-slate-700 mb-2">
               کد ملی بیمار
             </label>
+
             <div className="relative">
               <input
                 type="text"
+                inputMode="numeric"
                 value={nationalCode}
                 onChange={(e) => setNationalCode(e.target.value)}
                 placeholder="کدملی"
                 maxLength={10}
+                dir="ltr"
                 className="w-full pl-4 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-center tracking-widest text-lg font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 autoFocus
               />
