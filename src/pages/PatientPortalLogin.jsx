@@ -52,12 +52,9 @@ export default function PatientPortalLogin({ onVerified }) {
           {/* جایگزینی آیکون با لوگوی مرکز آریتمی تهران */}
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-blue-50/80 border border-blue-100 p-3 mb-4 shadow-inner mx-auto">
             <img
-              src="/images/logo.png"
+              src="https://api.report-tehranep.site/images/logo.png"
               alt="مرکز آریتمی تهران"
               className="max-h-full max-w-full object-contain"
-              onError={(e) => {
-                e.target.style.display = "none";
-              }}
             />
           </div>
           <h1 className="text-2xl font-bold text-slate-800">

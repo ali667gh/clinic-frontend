@@ -152,12 +152,9 @@ export default function PatientPortal() {
               {/* لوگوی مرکز آریتمی تهران */}
               <div className="bg-white p-2.5 rounded-2xl shadow-sm flex items-center justify-center">
                 <img
-                  src="/images/logo.png"
+                  src="https://api.report-tehranep.site/images/logo.png"
                   alt="مرکز آریتمی تهران"
-                  className="h-10 object-contain"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                  }}
+                  className="max-h-full max-w-full object-contain"
                 />
               </div>
               <div>
