@@ -1,8 +1,8 @@
 import React, { useState, Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// ۱. لود تنبل (Lazy Loading) تمام صفحات برای کاهش شدید حجم باندل اولیه
+// ۱. لود تنبل (Lazy Loading) تمام صفحات برای کاهش حجم باندل اولیه
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DoctorsManagement = lazy(() => import("./pages/DoctorsManagement"));
@@ -15,8 +15,9 @@ const ArchivesManagement = lazy(() => import("./pages/ArchivesManagement"));
 const ReportsManagement = lazy(() => import("./pages/ReportsManagement"));
 const PatientPortal = lazy(() => import("./pages/PatientPortal"));
 const ServicesManagement = lazy(() => import("@/pages/ServicesManagement"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
-// اسپینر یا لودینگ ساده و سبک هنگام تغییر صفحات
+// لودینگ سبک هنگام جابه‌جایی بین صفحات
 function PageLoader() {
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -42,7 +43,6 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {/* تمام روت‌ها داخل Suspense قرار می‌گیرند تا باندل فقط در صورت نیاز لود شود */}
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route
@@ -134,9 +134,20 @@ export default function App() {
             }
           />
 
+          {/* پرتال اختصاصی بیمار */}
           <Route path="/portal/:token" element={<PatientPortal />} />
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* مسیر اختصاصی خطا جهت فراخوانی دستی از صفحات */}
+          <Route
+            path="/not-found"
+            element={<NotFound type="404" redirectPath="/login" />}
+          />
+
+          {/* مسیر پیش‌فرض برای هر آدرس ناشناخته در سامانه */}
+          <Route
+            path="*"
+            element={<NotFound type="404" redirectPath="/login" />}
+          />
         </Routes>
       </Suspense>
     </BrowserRouter>
