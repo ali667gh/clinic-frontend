@@ -52,11 +52,13 @@ export default function App() {
           />
 
           {/* انقضای نشست */}
+          {/* نشست منقضی‌شده */}
           <Route
             path="/session-expired"
             element={
               <NotFound
                 type="expired"
+                errorCode="401"
                 redirectPath="/login"
                 customTitle="نشست شما پایان یافته است"
                 customMessage="با ورود به دستگاه دیگر، این نشست منقضی شد. لطفاً مجدداً وارد شوید."

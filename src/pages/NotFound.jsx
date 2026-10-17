@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Activity, ArrowRight, ShieldAlert, HeartCrack } from "lucide-react";
+import { Activity, ArrowRight } from "lucide-react";
 
 export default function NotFound({
   type = "404", // '404' یا 'expired' یا 'unauthorized'
+  errorCode,
   customTitle,
   customMessage,
   redirectPath = "/login",
@@ -18,25 +19,32 @@ export default function NotFound({
   const contentMap = {
     404: {
       badge: "خطای ۴۰۴",
+      code: "404",
       title: customTitle || "صفحه مورد نظر یافت نشد!",
       desc:
         customMessage ||
         "متأسفانه صفحه‌ای که به دنبال آن بودید جابه‌جا شده یا وجود ندارد.",
-      icon: <HeartCrack className="w-12 h-12 text-rose-500 animate-pulse" />,
       badgeColor: "bg-rose-50 text-rose-600 border-rose-200",
+      codeBoxBg:
+        "bg-gradient-to-b from-rose-50 to-rose-100/60 border-rose-200 text-rose-600 shadow-rose-200/40",
+      glowColor: "bg-rose-500/10",
     },
     expired: {
       badge: "نشست منقضی شده",
+      code: "401",
       title: customTitle || "اعتبار صفحه به پایان رسیده است",
       desc:
         customMessage ||
         "به دلیل عدم فعالیت یا پایان زمان دسترسی، جهت حفظ امنیت اطلاعات پزشکی باید مجدداً وارد شوید.",
-      icon: <ShieldAlert className="w-12 h-12 text-amber-500 animate-bounce" />,
       badgeColor: "bg-amber-50 text-amber-600 border-amber-200",
+      codeBoxBg:
+        "bg-gradient-to-b from-amber-50 to-amber-100/70 border-amber-200 text-amber-600 shadow-amber-200/40",
+      glowColor: "bg-amber-500/10",
     },
   };
 
   const activeContent = contentMap[currentType] || contentMap["404"];
+  const displayCode = errorCode || activeContent.code;
 
   // مدیریت تایمر ۴ ثانیه‌ای
   useEffect(() => {
@@ -76,7 +84,7 @@ export default function NotFound({
         </div>
 
         {/* بج خطا */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border mb-4 shadow-sm mx-auto">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border mb-3 shadow-sm mx-auto">
           <span
             className={`px-2 py-0.5 rounded-full text-xs font-bold border ${activeContent.badgeColor}`}
           >
@@ -84,19 +92,29 @@ export default function NotFound({
           </span>
         </div>
 
-        {/* انیمیشن ریتم قلب و آیکون وضعیت */}
-        <div className="relative my-4 flex flex-col items-center justify-center">
-          <div className="w-20 h-20 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shadow-inner mb-3">
-            {activeContent.icon}
+        {/* کادر کد خطا (جایگزین آیکون سپر) */}
+        <div className="relative my-3 flex flex-col items-center justify-center">
+          {/* هاله نوری ملایم پشت عدد */}
+          <div
+            className={`absolute h-24 w-24 rounded-full blur-xl animate-pulse ${activeContent.glowColor}`}
+          />
+
+          {/* باکس نمایش عدد خطا */}
+          <div
+            className={`relative flex h-20 w-24 items-center justify-center rounded-2xl border shadow-sm mb-3 ${activeContent.codeBoxBg}`}
+          >
+            <span className="font-mono text-3xl font-extrabold tracking-wider">
+              {displayCode}
+            </span>
           </div>
 
           {/* موج خط ECG نمادین قلب */}
           <div className="flex items-center gap-1 text-blue-500 opacity-60">
-            <Activity className="w-5 h-5 animate-pulse" />
-            <span className="text-xs font-mono tracking-widest text-slate-400">
+            <Activity className="w-4 h-4 animate-pulse" />
+            <span className="text-[11px] font-mono tracking-widest text-slate-400">
               ARRHYTHMIA CARE
             </span>
-            <Activity className="w-5 h-5 animate-pulse" />
+            <Activity className="w-4 h-4 animate-pulse" />
           </div>
         </div>
 
