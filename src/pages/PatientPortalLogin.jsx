@@ -59,19 +59,20 @@ export default function PatientPortalLogin({ onVerified }) {
     >
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-blue-50/80 border border-blue-100 p-3 mb-4 shadow-inner mx-auto">
+          {/* لوگوی مرکز آریتمی تهران با ابعاد بیش از ۲ برابر بزرگ‌تر */}
+          <div className="inline-flex items-center justify-center w-40 h-40 rounded-3xl bg-blue-50/70 border border-blue-100 p-4 mb-5 shadow-inner mx-auto">
             <img
               src="https://api.report-tehranep.site/images/logo.png"
               alt="مرکز آریتمی تهران"
-              className="max-h-full max-w-full object-contain"
+              className="max-h-full max-w-full h-28 object-contain drop-shadow-sm"
             />
           </div>
 
           <h1 className="text-2xl font-bold text-slate-800">
-            پرتال مراجعین درمانگاه
+            پرتال مراجعین مرکز آریتمی تهران
           </h1>
-          <p className="text-sm text-slate-500 mt-2">
-            جهت مشاهده جواب آزمایش و صورتحساب، کد ملی بیمار را وارد فرمایید.
+          <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+            جهت مشاهده پرونده درمانی و صورتحساب، کد ملی بیمار را وارد کنید.
           </p>
         </div>
 
