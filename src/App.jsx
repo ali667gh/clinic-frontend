@@ -2,7 +2,7 @@ import React, { useState, Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// ۱. لود تنبل (Lazy Loading) تمام صفحات برای کاهش حجم باندل اولیه
+// لود تنبل صفحات
 const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DoctorsManagement = lazy(() => import("./pages/DoctorsManagement"));
@@ -17,11 +17,11 @@ const PatientPortal = lazy(() => import("./pages/PatientPortal"));
 const ServicesManagement = lazy(() => import("@/pages/ServicesManagement"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// لودینگ سبک هنگام جابه‌جایی بین صفحات
+// نمایش لودینگ هنگام بارگذاری صفحات
 function PageLoader() {
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
     </div>
   );
 }
@@ -45,12 +45,26 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          {/* ورود */}
           <Route
             path="/login"
             element={<Login onLoginSuccess={handleLoginSuccess} />}
           />
 
-          {/* داشبورد: در دسترس همه نقش‌های لاگین شده */}
+          {/* انقضای نشست */}
+          <Route
+            path="/session-expired"
+            element={
+              <NotFound
+                type="expired"
+                redirectPath="/login"
+                customTitle="نشست شما پایان یافته است"
+                customMessage="با ورود به دستگاه دیگر، این نشست منقضی شد. لطفاً مجدداً وارد شوید."
+              />
+            }
+          />
+
+          {/* داشبورد: در دسترس همه نقش‌های واردشده */}
           <Route
             path="/"
             element={
@@ -122,7 +136,7 @@ export default function App() {
             }
           />
 
-          {/* جوابدهی: همه می‌بینند */}
+          {/* جوابدهی: ادمین و هر دو سطح منشی */}
           <Route
             path="/results"
             element={
@@ -137,13 +151,13 @@ export default function App() {
           {/* پرتال اختصاصی بیمار */}
           <Route path="/portal/:token" element={<PatientPortal />} />
 
-          {/* مسیر اختصاصی خطا جهت فراخوانی دستی از صفحات */}
+          {/* مسیر خطا برای فراخوانی مستقیم */}
           <Route
             path="/not-found"
             element={<NotFound type="404" redirectPath="/login" />}
           />
 
-          {/* مسیر پیش‌فرض برای هر آدرس ناشناخته در سامانه */}
+          {/* مسیر پیش‌فرض برای آدرس‌های ناشناخته */}
           <Route
             path="*"
             element={<NotFound type="404" redirectPath="/login" />}

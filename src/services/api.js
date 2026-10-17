@@ -20,18 +20,27 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    const status = error.response?.status;
+    const requestUrl = error.config?.url ?? "";
+    const isLoginRequest = requestUrl.includes("/login");
+
+    if (status === 401 && !isLoginRequest) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+
+      // هدایت خودکار کاربر به صفحه نشست منقضی شده (جلوگیری از لوپ ریدایرکت)
+      if (window.location.pathname !== "/session-expired") {
+        window.location.replace("/session-expired");
+      }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;
