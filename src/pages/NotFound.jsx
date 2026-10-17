@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Activity, ArrowRight } from "lucide-react";
+import { LogIn, AlertCircle, FileQuestion } from "lucide-react";
 
 export default function NotFound({
-  type = "404", // '404' یا 'expired' یا 'unauthorized'
+  type = "404",
   errorCode,
   customTitle,
   customMessage,
@@ -13,40 +13,32 @@ export default function NotFound({
   const location = useLocation();
   const [timeLeft, setTimeLeft] = useState(4);
 
-  // تشخیص نوع خطا از روی state پاس‌داده‌شده در navigate (در صورت وجود)
   const currentType = location.state?.type || type;
 
   const contentMap = {
     404: {
-      badge: "خطای ۴۰۴",
-      code: "404",
-      title: customTitle || "صفحه مورد نظر یافت نشد!",
+      code: "۴۰۴",
+      title: customTitle || "صفحه مورد نظر یافت نشد",
       desc:
         customMessage ||
-        "متأسفانه صفحه‌ای که به دنبال آن بودید جابه‌جا شده یا وجود ندارد.",
-      badgeColor: "bg-rose-50 text-rose-600 border-rose-200",
-      codeBoxBg:
-        "bg-gradient-to-b from-rose-50 to-rose-100/60 border-rose-200 text-rose-600 shadow-rose-200/40",
-      glowColor: "bg-rose-500/10",
+        "آدرس وارد شده معتبر نیست یا صفحه مورد نظر به آدرس دیگری منتقل شده است.",
+      icon: <FileQuestion className="w-6 h-6 text-slate-500" />,
+      badgeColor: "bg-slate-100 text-slate-700 border-slate-200",
     },
     expired: {
-      badge: "نشست منقضی شده",
-      code: "401",
-      title: customTitle || "اعتبار صفحه به پایان رسیده است",
+      code: "۴۰۱",
+      title: customTitle || "نشست شما پایان یافته است",
       desc:
         customMessage ||
-        "به دلیل عدم فعالیت یا پایان زمان دسترسی، جهت حفظ امنیت اطلاعات پزشکی باید مجدداً وارد شوید.",
-      badgeColor: "bg-amber-50 text-amber-600 border-amber-200",
-      codeBoxBg:
-        "bg-gradient-to-b from-amber-50 to-amber-100/70 border-amber-200 text-amber-600 shadow-amber-200/40",
-      glowColor: "bg-amber-500/10",
+        "به دلیل ورود از دستگاه دیگر یا پایان مهلت نشست، لطفاً مجدداً وارد شوید.",
+      icon: <AlertCircle className="w-6 h-6 text-amber-600" />,
+      badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
     },
   };
 
   const activeContent = contentMap[currentType] || contentMap["404"];
   const displayCode = errorCode || activeContent.code;
 
-  // مدیریت تایمر ۴ ثانیه‌ای
   useEffect(() => {
     if (timeLeft <= 0) {
       navigate(redirectPath, { replace: true });
@@ -60,104 +52,62 @@ export default function NotFound({
     return () => clearInterval(timer);
   }, [timeLeft, navigate, redirectPath]);
 
-  // درصد پیشرفت خط تایم‌لاین (از ۱۰۰٪ به ۰٪ در طول ۴ ثانیه)
-  const progressPercent = (timeLeft / 4) * 100;
-
   return (
     <div
-      className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans"
+      className="min-h-screen bg-slate-100/70 flex items-center justify-center p-4 antialiased"
       dir="rtl"
     >
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-center relative overflow-hidden">
-        {/* نوار رنگی بالای کارت شبیه نوار مانیتور قلب */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-rose-500 to-indigo-600" />
-
-        {/* لوگوی مرکز آریتمی تهران */}
-        <div className="flex justify-center mb-6">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-blue-50/80 border border-blue-100 p-3 shadow-inner">
-            <img
-              src="https://api.report-tehranep.site/images/logo.png"
-              alt="مرکز آریتمی تهران"
-              className="max-h-full max-w-full object-contain"
-            />
-          </div>
-        </div>
-
-        {/* بج خطا */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border mb-3 shadow-sm mx-auto">
-          <span
-            className={`px-2 py-0.5 rounded-full text-xs font-bold border ${activeContent.badgeColor}`}
-          >
-            {activeContent.badge}
-          </span>
-        </div>
-
-        {/* کادر کد خطا (جایگزین آیکون سپر) */}
-        <div className="relative my-3 flex flex-col items-center justify-center">
-          {/* هاله نوری ملایم پشت عدد */}
-          <div
-            className={`absolute h-24 w-24 rounded-full blur-xl animate-pulse ${activeContent.glowColor}`}
+      <div className="w-full max-w-sm bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 sm:p-7 text-center">
+        {/* لوگوی مرکز */}
+        <div className="flex justify-center mb-5">
+          <img
+            src="https://api.report-tehranep.site/images/logo.png"
+            alt="مرکز آریتمی تهران"
+            className="h-14 w-auto object-contain"
           />
+        </div>
 
-          {/* باکس نمایش عدد خطا */}
-          <div
-            className={`relative flex h-20 w-24 items-center justify-center rounded-2xl border shadow-sm mb-3 ${activeContent.codeBoxBg}`}
-          >
-            <span className="font-mono text-3xl font-extrabold tracking-wider">
-              {displayCode}
-            </span>
-          </div>
-
-          {/* موج خط ECG نمادین قلب */}
-          <div className="flex items-center gap-1 text-blue-500 opacity-60">
-            <Activity className="w-4 h-4 animate-pulse" />
-            <span className="text-[11px] font-mono tracking-widest text-slate-400">
-              ARRHYTHMIA CARE
-            </span>
-            <Activity className="w-4 h-4 animate-pulse" />
+        {/* آیکون وضعیت */}
+        <div className="flex justify-center mb-4">
+          <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center">
+            {activeContent.icon}
           </div>
         </div>
 
-        {/* عنوان و توضیحات */}
-        <h2 className="text-xl font-bold text-slate-800 mb-2">
+        {/* کد خطا به‌صورت تگ رسمی و کوچک */}
+        <div className="inline-block px-2.5 py-0.5 rounded-md text-xs font-mono font-semibold border mb-3">
+          کد خطا: {displayCode}
+        </div>
+
+        {/* عنوان و توضیحات کاملاً اداری و خوانا */}
+        <h1 className="text-base font-bold text-slate-900 mb-2">
           {activeContent.title}
-        </h2>
-        <p className="text-sm text-slate-500 leading-relaxed mb-6">
+        </h1>
+        <p className="text-xs text-slate-600 leading-relaxed mb-6 px-1">
           {activeContent.desc}
         </p>
 
-        {/* بخش تایم‌لاین ۴ ثانیه‌ای */}
-        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 mb-6">
-          <div className="flex items-center justify-between text-xs text-slate-600 font-medium mb-2">
-            <span>انتقال خودکار به صفحه ورود:</span>
-            <span className="text-blue-600 font-bold font-mono text-sm">
-              {timeLeft} ثانیه
-            </span>
-          </div>
-
-          {/* نوار متحرک پروگرس‌بار */}
-          <div
-            className="w-full h-2 bg-slate-200 rounded-full overflow-hidden"
-            dir="ltr"
-          >
-            <div
-              className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-linear shadow-sm"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-
-        {/* دکمه بازگشت سریع */}
+        {/* دکمه ورود مجدد */}
         <button
           onClick={() => navigate(redirectPath, { replace: true })}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-[0.99]"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2.5 px-4 rounded-xl transition duration-150 flex items-center justify-center gap-2"
         >
-          <span>بازگشت سریع به صفحه ورود</span>
-          <ArrowRight className="w-4 h-4 rotate-180" />
+          <LogIn className="w-4 h-4" />
+          <span>ورود به سامانه</span>
         </button>
 
+        {/* شمارشگر آرام و مینیمال */}
+        <p className="text-[11px] text-slate-400 mt-3 font-normal">
+          انتقال خودکار تا{" "}
+          <span className="font-semibold text-slate-600 font-mono">
+            {timeLeft}
+          </span>{" "}
+          ثانیه دیگر...
+        </p>
+
+        {/* فوتر مینیمال */}
         <div className="mt-6 pt-4 border-t border-slate-100 text-center text-[11px] text-slate-400">
-          مرکز تخصصی آریتمی و الکتروفیزیولوژی قلب تهران
+          مرکز تخصصی آریتمی قلب تهران
         </div>
       </div>
     </div>
