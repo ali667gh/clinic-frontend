@@ -59,12 +59,12 @@ export default function PatientPortalLogin({ onVerified }) {
     >
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
         <div className="text-center mb-8">
-          {/* لوگوی مرکز آریتمی تهران با ابعاد بیش از ۲ برابر بزرگ‌تر */}
-          <div className="inline-flex items-center justify-center w-40 h-40 rounded-3xl bg-blue-50/70 border border-blue-100 p-4 mb-5 shadow-inner mx-auto">
+          {/* لوگوی مرکز آریتمی تهران بدون کادر، بزرگ و مستطیلی */}
+          <div className="flex items-center justify-center mb-5 mx-auto">
             <img
               src="https://api.report-tehranep.site/images/logo.png"
               alt="مرکز آریتمی تهران"
-              className="max-h-full max-w-full h-28 object-contain drop-shadow-sm"
+              className="h-20 sm:h-24 object-contain"
             />
           </div>
 

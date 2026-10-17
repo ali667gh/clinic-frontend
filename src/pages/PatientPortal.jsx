@@ -148,13 +148,13 @@ export default function PatientPortal() {
         {/* هدر پرتال */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
           <div className="relative z-10 flex items-center justify-between">
-            <div className="flex items-center gap-4 sm:gap-5">
-              {/* لوگوی مرکز آریتمی تهران */}
-              <div className="bg-white p-2.5 rounded-2xl shadow-sm flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+            <div className="flex items-center gap-4 sm:gap-6">
+              {/* لوگوی مرکز آریتمی تهران با ابعاد مستطیلی بزرگ و بدون کادر اضافی */}
+              <div className="flex items-center justify-center flex-shrink-0">
                 <img
                   src="https://api.report-tehranep.site/images/logo.png"
                   alt="مرکز آریتمی تهران"
-                  className="max-h-full max-w-full object-contain"
+                  className="h-16 sm:h-20 object-contain filter drop-shadow"
                 />
               </div>
 
