@@ -57,19 +57,18 @@ export default function PatientsManagement() {
   const [page, setPage] = useState(1);
   const [totalFromServer, setTotalFromServer] = useState(0);
 
-  // دریافت لیست بیماران از سرور (دریافت کل رکوردها با پر کردن per_page بزرگ در صورت نیاز)
+  // دریافت لیست بیماران از سرور
   const fetchPatients = useCallback(async (searchTerm = "") => {
     try {
       setIsLoading(true);
       const response = await api.get("/patients", {
         params: {
           search: searchTerm || undefined,
-          per_page: 500, // برای اینکه تمام رکوردها رو بگیریم و فیلتر/صفحه‌بندی فرانت‌انْد دقیق کار کنه
+          per_page: 500,
         },
       });
       const res = response.data;
 
-      // پشتیبانی از ساختارهای مختلف پاسخ لاراول (Pagination یا آرایه ساده)
       const rawList = Array.isArray(res?.data?.data)
         ? res.data.data
         : Array.isArray(res?.data)
@@ -81,7 +80,6 @@ export default function PatientsManagement() {
       const normalized = rawList.map(normalizePatient);
       setPatients(normalized);
 
-      // تعیین تعداد کل واقعی از سرور
       const total = res?.data?.total ?? res?.total ?? normalized.length;
       setTotalFromServer(total);
     } catch (error) {
@@ -114,9 +112,14 @@ export default function PatientsManagement() {
       errs.fileNumber = "شماره پرونده الزامی است";
     if (!/^\d{10}$/.test(formData.nationalId.trim()))
       errs.nationalId = "کد ملی باید ۱۰ رقم باشد";
-    if (formData.mobile.trim() && !/^09\d{9}$/.test(formData.mobile.trim())) {
+
+    // اجباری کردن شماره موبایل و بررسی فرمت صحیح
+    if (!formData.mobile.trim()) {
+      errs.mobile = "شماره موبایل الزامی است";
+    } else if (!/^09\d{9}$/.test(formData.mobile.trim())) {
       errs.mobile = "فرمت موبایل نامعتبر است (مثال: 09121234567)";
     }
+
     return errs;
   };
 
@@ -134,7 +137,7 @@ export default function PatientsManagement() {
         full_name: formData.fullName.trim(),
         file_number: formData.fileNumber.trim(),
         national_code: formData.nationalId.trim(),
-        mobile: formData.mobile.trim() || null,
+        mobile: formData.mobile.trim(),
       };
 
       await api.post("/patients", payload);
@@ -303,10 +306,7 @@ export default function PatientsManagement() {
 
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-700">
-                    شماره موبایل{" "}
-                    <span className="text-slate-400 font-normal">
-                      (اختیاری)
-                    </span>
+                    شماره موبایل <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Phone className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -464,11 +464,7 @@ export default function PatientsManagement() {
                           className="px-2 py-3 font-mono text-slate-600"
                           dir="ltr"
                         >
-                          {p.mobile || (
-                            <span className="text-slate-300 font-sans">
-                              ندارد
-                            </span>
-                          )}
+                          {p.mobile}
                         </td>
                         <td className="px-2 py-3 text-slate-500">
                           {p.registeredAtFormatted}
