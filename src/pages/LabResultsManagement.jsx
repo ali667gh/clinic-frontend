@@ -787,16 +787,20 @@ export default function LabResultsManagement() {
       service?.serviceCode === "visit",
     );
 
+  // تشخیص ویزیت برای آیتم‌های انتخاب‌شده/صف موقت:
+  // علاوه بر فلگ ذخیره‌شده در خود آیتم (که ممکن است در پیش‌نویس‌های قدیمی نباشد)،
+  // از تعریف زنده‌ی خدمت در «مدیریت خدمات» هم استفاده می‌شود.
+  const isVisitEntry = (s) =>
+    isBaseVisitService(s) || Boolean(getServiceDef(s?.serviceId)?.is_visit);
+
   // ۱. آیا ویزیتی در فرم بالا انتخاب شده است؟
-  const hasSelectedVisitInForm = selectedServices.some((s) =>
-    isBaseVisitService(s),
-  );
+  const hasSelectedVisitInForm = selectedServices.some((s) => isVisitEntry(s));
 
   // ۲. آیا ویزیتی قبلاً به لیست موقت پایین اضافه شده است؟
   const hasVisitInTemporaryQueue = temporaryQueue.some(
     (item) =>
       Array.isArray(item?.services) &&
-      item.services.some((s) => isBaseVisitService(s)),
+      item.services.some((s) => isVisitEntry(s)),
   );
 
   // ۳. وجود ویزیت در هر یک از حالت‌های مجاز
@@ -1079,6 +1083,14 @@ export default function LabResultsManagement() {
     let totalAmount = 0;
 
     temporaryQueue.forEach((qItem) => {
+      const itemDoctorId = qItem.doctor?.id || qItem.doctorId || "";
+      const itemDoctorName =
+        qItem.doctor?.name ||
+        qItem.doctor?.full_name ||
+        qItem.doctor?.user?.name ||
+        `${qItem.doctor?.first_name || ""} ${qItem.doctor?.last_name || ""}`.trim() ||
+        "نامشخص";
+
       (qItem.services || []).forEach((s) => {
         const foundDef = servicesList.find((srv) => srv.id === s.serviceId);
         const itemPrice = Number(s.price || foundDef?.price || 0);
@@ -1088,6 +1100,9 @@ export default function LabResultsManagement() {
           serviceId: s.serviceId,
           serviceTitle:
             s.serviceId === "other" ? s.customName || "سایر" : s.serviceTitle,
+          // پزشک هر ردیف فاکتور (تا دو ویزیت با دو پزشک مختلف درست نمایش داده شوند)
+          doctorId: itemDoctorId,
+          doctorName: itemDoctorName,
           price: itemPrice,
           count: 1,
           total: itemPrice,
@@ -1127,6 +1142,19 @@ export default function LabResultsManagement() {
     // لیست موقت یا سابقه تاییدشده وجود داشته باشد.
     if (!hasAnyVisit) {
       toast.error("برای ثبت نهایی ابتدا باید یک ویزیت پایه انتخاب یا ثبت شود.");
+      return;
+    }
+
+    // گارد حداکثر یک ویزیت پایه در لیست موقت
+    const queuedVisitCount = temporaryQueue.reduce(
+      (count, item) =>
+        count + (item.services || []).filter((s) => isVisitEntry(s)).length,
+      0,
+    );
+    if (queuedVisitCount > 1) {
+      toast.error(
+        "در لیست موقت بیش از یک ویزیت پایه وجود دارد. یکی از رکوردها را حذف کنید.",
+      );
       return;
     }
 
