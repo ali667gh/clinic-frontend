@@ -11,7 +11,7 @@ const SecretariesManagement = lazy(
   () => import("@/pages/SecretariesManagement"),
 );
 const LabResultsManagement = lazy(() => import("./pages/LabResultsManagement"));
-const DispatchManagement = lazy(() => import("./pages/DispatchManagement"));
+const DispatchManagement = lazy(() => import("./pages/Dispatchmanagement"));
 const ArchivesManagement = lazy(() => import("./pages/ArchivesManagement"));
 const ReportsManagement = lazy(() => import("./pages/ReportsManagement"));
 const PatientPortal = lazy(() => import("./pages/PatientPortal"));
