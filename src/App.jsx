@@ -11,6 +11,7 @@ const SecretariesManagement = lazy(
   () => import("@/pages/SecretariesManagement"),
 );
 const LabResultsManagement = lazy(() => import("./pages/LabResultsManagement"));
+const DispatchManagement = lazy(() => import("./pages/DispatchManagement"));
 const ArchivesManagement = lazy(() => import("./pages/ArchivesManagement"));
 const ReportsManagement = lazy(() => import("./pages/ReportsManagement"));
 const PatientPortal = lazy(() => import("./pages/PatientPortal"));
@@ -146,6 +147,16 @@ export default function App() {
                 allowedRoles={["admin", "staff_level_1", "staff_level_2"]}
               >
                 <LabResultsManagement />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* مدیریت ارسالی‌ها: فقط ادمین و منشی سطح یک */}
+          <Route
+            path="/dispatch"
+            element={
+              <ProtectedRoute allowedRoles={["admin", "staff_level_1"]}>
+                <DispatchManagement />
               </ProtectedRoute>
             }
           />

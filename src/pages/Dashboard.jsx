@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   Lock,
   Layers,
+  Send,
 } from "lucide-react";
 
 export default function Dashboard({ onLogout }) {
@@ -26,7 +27,11 @@ export default function Dashboard({ onLogout }) {
   );
 
   const isAdmin = user.role === "admin";
+  const isSecretary1 = user.role === "staff_level_1";
   const isSecretary2 = user.role === "staff_level_2";
+
+  // مدیریت ارسالی‌ها: فقط ادمین و منشی سطح یک
+  const canDispatch = isAdmin || isSecretary1;
 
   const getRoleTitle = (role) => {
     switch (role) {
@@ -41,14 +46,28 @@ export default function Dashboard({ onLogout }) {
     }
   };
 
+  const showAccessDenied = (message) => {
+    setAccessDeniedMsg(message);
+    setTimeout(() => setAccessDeniedMsg(""), 4000);
+  };
+
   const handleAdminOnlyClick = (path, title) => {
     if (isAdmin) {
       navigate(path);
     } else {
-      setAccessDeniedMsg(
+      showAccessDenied(
         `شما به بخش «${title}» دسترسی ندارید. این بخش فقط برای مدیر سیستم تعریف شده است.`,
       );
-      setTimeout(() => setAccessDeniedMsg(""), 4000);
+    }
+  };
+
+  const handleDispatchClick = () => {
+    if (canDispatch) {
+      navigate("/dispatch");
+    } else {
+      showAccessDenied(
+        "شما به بخش «مدیریت ارسالی‌ها» دسترسی ندارید. این بخش فقط برای مدیر سیستم و منشی سطح یک تعریف شده است.",
+      );
     }
   };
 
@@ -322,7 +341,7 @@ export default function Dashboard({ onLogout }) {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* مدیریت بیماران */}
             <div className="bg-white p-6 rounded-2xl border border-slate-100 hover:border-emerald-100 hover:shadow-lg hover:shadow-emerald-500/5 transition-all flex items-center justify-between">
               <div className="flex items-start gap-4">
@@ -342,6 +361,49 @@ export default function Dashboard({ onLogout }) {
                   >
                     <span>مشاهده اطلاعات</span>
                     <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* مدیریت ارسالی‌ها (فقط ادمین و منشی سطح یک) */}
+            <div
+              className={`bg-white p-6 rounded-2xl border transition-all flex items-center justify-between ${
+                canDispatch
+                  ? "border-slate-100 hover:border-sky-100 hover:shadow-lg hover:shadow-sky-500/5"
+                  : "border-slate-200/70 opacity-80"
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                  <Send className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800 mb-1">
+                    مدیریت ارسالی‌ها
+                  </h3>
+                  <p className="text-xs text-slate-400 mb-3">
+                    ارسال دوباره‌ی لینک بیماران اخیر و ویرایش‌شده
+                  </p>
+                  <button
+                    onClick={handleDispatchClick}
+                    className={`inline-flex items-center gap-2 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-xs transition-colors ${
+                      canDispatch
+                        ? "bg-sky-600 hover:bg-sky-700"
+                        : "bg-slate-400 hover:bg-slate-500"
+                    }`}
+                  >
+                    {canDispatch ? (
+                      <>
+                        <span>مشاهده و ارسال مجدد</span>
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>دسترسی محدود</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
