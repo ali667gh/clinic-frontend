@@ -4,11 +4,13 @@ import {
   Users,
   Search,
   Trash2,
+  Edit,
   UserPlus,
   Phone,
   ClipboardList,
   ArrowRight,
   Loader2,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +44,9 @@ export default function PatientsManagement() {
   const [patients, setPatients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // استیت برای مشخص کردن اینکه در حال ویرایش هستیم یا ثبت جدید
+  const [editingPatientId, setEditingPatientId] = useState(null);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -113,7 +118,6 @@ export default function PatientsManagement() {
     if (!/^\d{10}$/.test(formData.nationalId.trim()))
       errs.nationalId = "کد ملی باید ۱۰ رقم باشد";
 
-    // اجباری کردن شماره موبایل و بررسی فرمت صحیح
     if (!formData.mobile.trim()) {
       errs.mobile = "شماره موبایل الزامی است";
     } else if (!/^09\d{9}$/.test(formData.mobile.trim())) {
@@ -121,6 +125,26 @@ export default function PatientsManagement() {
     }
 
     return errs;
+  };
+
+  // شروع عملیات ویرایش و پر کردن فرم
+  const handleStartEdit = (patient) => {
+    setEditingPatientId(patient.id);
+    setFormData({
+      fullName: patient.fullName,
+      fileNumber: patient.fileNumber,
+      nationalId: patient.nationalId,
+      mobile: patient.mobile,
+    });
+    setErrors({});
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // انصراف از ویرایش
+  const handleCancelEdit = () => {
+    setEditingPatientId(null);
+    setFormData({ fullName: "", fileNumber: "", nationalId: "", mobile: "" });
+    setErrors({});
   };
 
   const handleSubmit = async (e) => {
@@ -140,14 +164,22 @@ export default function PatientsManagement() {
         mobile: formData.mobile.trim(),
       };
 
-      await api.post("/patients", payload);
-      toast.success("بیمار با موفقیت ثبت شد");
+      if (editingPatientId) {
+        // آپدیت بیمار موجود
+        await api.put(`/patients/${editingPatientId}`, payload);
+        toast.success("اطلاعات بیمار با موفقیت ویرایش شد");
+        setEditingPatientId(null);
+      } else {
+        // ثبت بیمار جدید
+        await api.post("/patients", payload);
+        toast.success("بیمار با موفقیت ثبت شد");
+      }
+
       setFormData({ fullName: "", fileNumber: "", nationalId: "", mobile: "" });
       setErrors({});
-      setPage(1);
       fetchPatients(search);
     } catch (error) {
-      console.error("خطای ثبت بیمار:", error);
+      console.error("خطای ثبت/ویرایش بیمار:", error);
       const errObj = error.response?.data?.errors;
       const serverMessage =
         errObj?.file_number?.[0] ||
@@ -155,7 +187,7 @@ export default function PatientsManagement() {
         errObj?.full_name?.[0] ||
         errObj?.mobile?.[0] ||
         error.response?.data?.message;
-      toast.error(serverMessage || "خطا در ثبت بیمار");
+      toast.error(serverMessage || "خطا در ذخیره‌سازی اطلاعات بیمار");
     } finally {
       setIsSubmitting(false);
     }
@@ -168,6 +200,9 @@ export default function PatientsManagement() {
       setPatients((prev) => prev.filter((p) => p.id !== id));
       setTotalFromServer((prev) => Math.max(0, prev - 1));
       toast.success("بیمار حذف شد");
+      if (editingPatientId === id) {
+        handleCancelEdit();
+      }
     } catch (error) {
       console.error("خطای حذف بیمار:", error);
       toast.error("خطا در حذف بیمار");
@@ -228,13 +263,37 @@ export default function PatientsManagement() {
           </span>
         </div>
 
-        {/* فرم ثبت پرونده بیمار جدید */}
-        <Card>
+        {/* فرم ثبت یا ویرایش پرونده بیمار */}
+        <Card
+          className={editingPatientId ? "border-amber-300 bg-amber-50/20" : ""}
+        >
           <CardHeader className="flex-row items-center justify-between border-b border-slate-100">
             <CardTitle className="flex items-center gap-2 text-base">
-              <UserPlus className="h-4 w-4 text-emerald-600" />
-              ثبت پرونده بیمار جدید
+              {editingPatientId ? (
+                <>
+                  <Edit className="h-4 w-4 text-amber-600" />
+                  ویرایش اطلاعات بیمار
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4 text-emerald-600" />
+                  ثبت پرونده بیمار جدید
+                </>
+              )}
             </CardTitle>
+
+            {editingPatientId && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleCancelEdit}
+                className="text-xs text-slate-500 hover:text-slate-700"
+              >
+                <X className="ml-1 h-3.5 w-3.5" />
+                انصراف از ویرایش
+              </Button>
+            )}
           </CardHeader>
 
           <CardContent className="pt-5">
@@ -333,18 +392,34 @@ export default function PatientsManagement() {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-end gap-2 pt-2">
+                {editingPatientId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    disabled={isSubmitting}
+                  >
+                    انصراف
+                  </Button>
+                )}
                 <Button
                   type="submit"
                   size="default"
                   disabled={isSubmitting}
-                  className="min-w-[130px]"
+                  className={`min-w-[130px] ${
+                    editingPatientId
+                      ? "bg-amber-600 hover:bg-amber-700 text-white"
+                      : ""
+                  }`}
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                      در حال ثبت...
+                      {editingPatientId ? "در حال ویرایش..." : "در حال ثبت..."}
                     </>
+                  ) : editingPatientId ? (
+                    "ذخیره تغییرات"
                   ) : (
                     "ثبت پرونده بیمار"
                   )}
@@ -445,7 +520,12 @@ export default function PatientsManagement() {
 
                   <tbody className="divide-y divide-slate-100 text-slate-700">
                     {pagePatients.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50/60">
+                      <tr
+                        key={p.id}
+                        className={`hover:bg-slate-50/60 ${
+                          editingPatientId === p.id ? "bg-amber-50/50" : ""
+                        }`}
+                      >
                         <td className="py-3 pr-2 font-bold text-slate-900">
                           {p.fullName}
                         </td>
@@ -470,15 +550,29 @@ export default function PatientsManagement() {
                           {p.registeredAtFormatted}
                         </td>
                         <td className="py-3 pl-2 text-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(p.id)}
-                            className="h-8 w-8 text-slate-400 hover:text-red-600"
-                            title="حذف بیمار"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center justify-center gap-1">
+                            {/* دکمه و تول‌تیپ ویرایش */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleStartEdit(p)}
+                              className="h-8 w-8 text-slate-400 hover:text-amber-600 hover:bg-amber-50"
+                              title="ویرایش بیمار"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+
+                            {/* دکمه و تول‌تیپ حذف */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(p.id)}
+                              className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                              title="حذف بیمار"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
