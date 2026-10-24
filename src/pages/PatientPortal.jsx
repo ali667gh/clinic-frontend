@@ -29,7 +29,14 @@ export default function PatientPortal() {
   const [downloadingFile, setDownloadingFile] = useState(null);
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
 
-  const baseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+  const baseUrl =
+    import.meta.env.VITE_API_URL || "https://api.report-tehranep.site/api";
+
+  // تابع تضمین امن بودن پروتکل (تبدیل http به https جهت رفع Mixed Content)
+  const toSecureUrl = (rawUrl) => {
+    if (!rawUrl) return "";
+    return rawUrl.replace(/^http:\/\//i, "https://");
+  };
 
   useEffect(() => {
     if (isVerified && token) {
@@ -113,13 +120,13 @@ export default function PatientPortal() {
     }
   };
 
-  // دانلود مستقیم فایل‌های پیوست بدون باز کردن تب جدید
-  const handleDownloadFile = async (fileUrl, fileName) => {
+  // دانلود مستقیم فایل‌های پیوست با استفاده از HTTPS
+  const handleDownloadFile = async (rawUrl, fileName) => {
+    const secureUrl = toSecureUrl(rawUrl);
     try {
       setDownloadingFile(fileName);
 
-      // ۱. تلاش اول با fetch استاندارد و تبدیل به Blob
-      const response = await fetch(fileUrl, {
+      const response = await fetch(secureUrl, {
         method: "GET",
       });
 
@@ -138,20 +145,17 @@ export default function PatientPortal() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.warn(
-        "Direct blob download restricted by CORS, triggering native browser download:",
+        "Blob fetch failed, falling back to direct navigation:",
         err,
       );
-
-      // ۲. در صورت محدودیت CORS، لینک را در فریم مخفی دانلود می‌کنیم تا هرگز تب جدید باز نشود
-      const hiddenIframe = document.createElement("iframe");
-      hiddenIframe.style.display = "none";
-      hiddenIframe.src = fileUrl;
-      document.body.appendChild(hiddenIframe);
-
-      // حذف فریم بعد از زمان کوتاه
-      setTimeout(() => {
-        hiddenIframe.remove();
-      }, 3000);
+      // در صورت بروز هر خطای CORS، لینک امن به عنوان fallback دانلود می‌شود
+      const link = document.createElement("a");
+      link.href = secureUrl;
+      link.setAttribute("download", fileName || "attachment.pdf");
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     } finally {
       setDownloadingFile(null);
     }
@@ -219,7 +223,6 @@ export default function PatientPortal() {
         <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
           <div className="relative z-10 flex items-center justify-between">
             <div className="flex items-center gap-4 sm:gap-6">
-              {/* لوگوی مرکز آریتمی تهران با ابعاد مستطیلی بزرگ */}
               <div className="flex items-center justify-center flex-shrink-0">
                 <img
                   src="https://api.report-tehranep.site/images/logo.png"
@@ -352,9 +355,9 @@ export default function PatientPortal() {
                 <div className="flex items-center gap-2">
                   {file.url && (
                     <>
-                      {/* دکمه چشم: باز کردن و مشاهده در تب جدید */}
+                      {/* دکمه چشم: باز کردن با HTTPS */}
                       <a
-                        href={file.url}
+                        href={toSecureUrl(file.url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2 text-slate-600 hover:text-emerald-600 hover:bg-white rounded-lg transition"
@@ -362,7 +365,7 @@ export default function PatientPortal() {
                       >
                         <Eye className="w-5 h-5" />
                       </a>
-                      {/* دکمه دانلود: دانلود خودکار در همان صفحه بدون باز کردن تب جدید */}
+                      {/* دکمه دانلود: دانلود امن */}
                       <button
                         type="button"
                         disabled={downloadingFile === file.original_name}
