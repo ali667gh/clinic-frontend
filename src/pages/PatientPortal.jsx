@@ -83,8 +83,53 @@ export default function PatientPortal() {
   };
 
   // دانلود مستقیم فاکتور رسمی سامانه
-  const handleDownloadInvoice = () => {
-    window.open(`${baseUrl}/portal/${token}/invoice-pdf`, "_blank");
+  const handleDownloadInvoice = async () => {
+    try {
+      const response = await axios.get(
+        `${baseUrl}/portal/${token}/invoice-pdf`,
+        {
+          responseType: "blob",
+        },
+      );
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `Invoice-${data?.national_code || "portal"}.pdf`,
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download invoice error:", err);
+      // Fallback در صورت خطا در دانلود بیتی
+      window.open(`${baseUrl}/portal/${token}/invoice-pdf`, "_blank");
+    }
+  };
+
+  // دانلود مستقیم فایل‌های پیوست بدون باز کردن تب جدید
+  const handleDownloadFile = async (fileUrl, fileName) => {
+    try {
+      const response = await axios.get(fileUrl, {
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName || "attachment");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download file error:", err);
+      // Fallback در صورت خطای CORS
+      window.open(fileUrl, "_blank");
+    }
   };
 
   // اگر بیمار هنوز کد ملی را وارد نکرده، صفحه لاگین بیمار نمایش داده می‌شود
@@ -274,6 +319,7 @@ export default function PatientPortal() {
                 <div className="flex items-center gap-2">
                   {file.url && (
                     <>
+                      {/* دکمه چشم: باز کردن در تب جدید */}
                       <a
                         href={file.url}
                         target="_blank"
@@ -283,14 +329,17 @@ export default function PatientPortal() {
                       >
                         <Eye className="w-5 h-5" />
                       </a>
-                      <a
-                        href={file.url}
-                        download={file.original_name}
+                      {/* دکمه دانلود: دانلود خودکار بدون باز کردن تب */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDownloadFile(file.url, file.original_name)
+                        }
                         className="flex items-center gap-1.5 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-sm transition"
                       >
                         <Download className="w-4 h-4" />
                         <span>دانلود</span>
-                      </a>
+                      </button>
                     </>
                   )}
                 </div>
