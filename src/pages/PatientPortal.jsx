@@ -26,6 +26,8 @@ export default function PatientPortal() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
+  const [downloadingFile, setDownloadingFile] = useState(null);
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
 
   const baseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
 
@@ -85,6 +87,7 @@ export default function PatientPortal() {
   // دانلود مستقیم فاکتور رسمی سامانه
   const handleDownloadInvoice = async () => {
     try {
+      setIsDownloadingInvoice(true);
       const response = await axios.get(
         `${baseUrl}/portal/${token}/invoice-pdf`,
         {
@@ -105,30 +108,52 @@ export default function PatientPortal() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Download invoice error:", err);
-      // Fallback در صورت خطا در دانلود بیتی
-      window.open(`${baseUrl}/portal/${token}/invoice-pdf`, "_blank");
+    } finally {
+      setIsDownloadingInvoice(false);
     }
   };
 
   // دانلود مستقیم فایل‌های پیوست بدون باز کردن تب جدید
   const handleDownloadFile = async (fileUrl, fileName) => {
     try {
-      const response = await axios.get(fileUrl, {
-        responseType: "blob",
+      setDownloadingFile(fileName);
+
+      // ۱. تلاش اول با fetch استاندارد و تبدیل به Blob
+      const response = await fetch(fileUrl, {
+        method: "GET",
       });
-      const blob = new Blob([response.data]);
+
+      if (!response.ok) {
+        throw new Error(`Fetch error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", fileName || "attachment");
+      link.download = fileName || "attachment.pdf";
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Download file error:", err);
-      // Fallback در صورت خطای CORS
-      window.open(fileUrl, "_blank");
+      console.warn(
+        "Direct blob download restricted by CORS, triggering native browser download:",
+        err,
+      );
+
+      // ۲. در صورت محدودیت CORS، لینک را در فریم مخفی دانلود می‌کنیم تا هرگز تب جدید باز نشود
+      const hiddenIframe = document.createElement("iframe");
+      hiddenIframe.style.display = "none";
+      hiddenIframe.src = fileUrl;
+      document.body.appendChild(hiddenIframe);
+
+      // حذف فریم بعد از زمان کوتاه
+      setTimeout(() => {
+        hiddenIframe.remove();
+      }, 3000);
+    } finally {
+      setDownloadingFile(null);
     }
   };
 
@@ -194,7 +219,7 @@ export default function PatientPortal() {
         <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
           <div className="relative z-10 flex items-center justify-between">
             <div className="flex items-center gap-4 sm:gap-6">
-              {/* لوگوی مرکز آریتمی تهران با ابعاد مستطیلی بزرگ و بدون کادر اضافی */}
+              {/* لوگوی مرکز آریتمی تهران با ابعاد مستطیلی بزرگ */}
               <div className="flex items-center justify-center flex-shrink-0">
                 <img
                   src="https://api.report-tehranep.site/images/logo.png"
@@ -203,7 +228,6 @@ export default function PatientPortal() {
                 />
               </div>
 
-              {/* متن عنوان با فونت درشت و پررنگ طبق درخواست */}
               <div>
                 <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
                   پرتال مراجعین مرکز آریتمی تهران
@@ -285,11 +309,20 @@ export default function PatientPortal() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  disabled={isDownloadingInvoice}
                   onClick={handleDownloadInvoice}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white rounded-xl text-xs font-semibold shadow-sm transition"
                 >
-                  <Download className="w-4 h-4" />
-                  <span>دریافت فاکتور</span>
+                  {isDownloadingInvoice ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )}
+                  <span>
+                    {isDownloadingInvoice
+                      ? "در حال دریافت..."
+                      : "دریافت فاکتور"}
+                  </span>
                 </button>
               </div>
             </div>
@@ -319,7 +352,7 @@ export default function PatientPortal() {
                 <div className="flex items-center gap-2">
                   {file.url && (
                     <>
-                      {/* دکمه چشم: باز کردن در تب جدید */}
+                      {/* دکمه چشم: باز کردن و مشاهده در تب جدید */}
                       <a
                         href={file.url}
                         target="_blank"
@@ -329,16 +362,25 @@ export default function PatientPortal() {
                       >
                         <Eye className="w-5 h-5" />
                       </a>
-                      {/* دکمه دانلود: دانلود خودکار بدون باز کردن تب */}
+                      {/* دکمه دانلود: دانلود خودکار در همان صفحه بدون باز کردن تب جدید */}
                       <button
                         type="button"
+                        disabled={downloadingFile === file.original_name}
                         onClick={() =>
                           handleDownloadFile(file.url, file.original_name)
                         }
-                        className="flex items-center gap-1.5 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-sm transition"
+                        className="flex items-center gap-1.5 px-4 py-2 bg-slate-700 hover:bg-slate-800 disabled:bg-slate-400 text-white rounded-xl text-xs font-semibold shadow-sm transition"
                       >
-                        <Download className="w-4 h-4" />
-                        <span>دانلود</span>
+                        {downloadingFile === file.original_name ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Download className="w-4 h-4" />
+                        )}
+                        <span>
+                          {downloadingFile === file.original_name
+                            ? "در حال دریافت..."
+                            : "دانلود"}
+                        </span>
                       </button>
                     </>
                   )}
