@@ -36,6 +36,23 @@ import {
 export default function ArchivesManagement() {
   const navigate = useNavigate();
 
+  // تشخیص ادمین بودن کاربر برای محدودسازی دسترسی حذف
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        if (userObj.role === "admin") {
+          setIsAdmin(true);
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing user from localStorage", e);
+    }
+  }, []);
+
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -162,6 +179,10 @@ export default function ArchivesManagement() {
   };
 
   const handleDelete = async (id) => {
+    if (!isAdmin) {
+      alert("شما دسترسی حذف ندارید.");
+      return;
+    }
     if (!window.confirm("آیا از حذف این رکورد بایگانی مطمئن هستید؟")) return;
     try {
       await api.delete(`/archives/${id}`);
@@ -173,6 +194,10 @@ export default function ArchivesManagement() {
   };
 
   const handleBulkDelete = async () => {
+    if (!isAdmin) {
+      alert("شما دسترسی حذف ندارید.");
+      return;
+    }
     if (!bulkFrom || !bulkTo) {
       setBulkError("هر دو فیلد تاریخ باید وارد شوند.");
       return;
@@ -230,7 +255,6 @@ export default function ArchivesManagement() {
     }).format(d);
   };
 
-  // تابع کمکی برای پارس ایمن JSON فرم دیتا
   const getParsedFormData = (item) => {
     if (!item?.form_data) return null;
     let data = item.form_data;
@@ -244,7 +268,6 @@ export default function ArchivesManagement() {
     return data;
   };
 
-  // تابع کمکی برای پارس ایمن فیلد history
   const getParsedHistory = (item) => {
     if (!item?.history) return null;
     let data = item.history;
@@ -278,16 +301,19 @@ export default function ArchivesManagement() {
             </h1>
           </div>
 
-          <Button
-            variant="destructive"
-            onClick={() => {
-              setShowBulkModal(true);
-              setBulkError("");
-            }}
-          >
-            <Trash2 className="w-4 h-4 ml-1" />
-            حذف بایگانی‌ها
-          </Button>
+          {/* دکمه حذف گروهی تنها برای ادمین نمایش داده می‌شود */}
+          {isAdmin && (
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setShowBulkModal(true);
+                setBulkError("");
+              }}
+            >
+              <Trash2 className="w-4 h-4 ml-1" />
+              حذف بایگانی‌ها
+            </Button>
+          )}
         </div>
 
         <Card className="shadow-2xs border-slate-200">
@@ -426,19 +452,23 @@ export default function ArchivesManagement() {
                               </TooltipTrigger>
                               <TooltipContent>مشاهده جزئیات</TooltipContent>
                             </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="destructive"
-                                  size="icon"
-                                  className="h-8 w-8 bg-rose-600 hover:bg-rose-700"
-                                  onClick={() => handleDelete(item.id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>حذف رکورد</TooltipContent>
-                            </Tooltip>
+
+                            {/* دکمه حذف تکی تنها برای ادمین نمایش داده می‌شود */}
+                            {isAdmin && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="h-8 w-8 bg-rose-600 hover:bg-rose-700"
+                                    onClick={() => handleDelete(item.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>حذف رکورد</TooltipContent>
+                              </Tooltip>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -571,7 +601,6 @@ export default function ArchivesManagement() {
                 const formData = getParsedFormData(detailItem);
                 const directHistory = getParsedHistory(detailItem);
 
-                // استخراج تاریخچه از تمام منابع احتمالی با اولویت داده‌های معتبر
                 const auditTrail =
                   (Array.isArray(directHistory) && directHistory.length > 0
                     ? directHistory
@@ -586,17 +615,14 @@ export default function ArchivesManagement() {
                     : null) ||
                   [];
 
-                // لیست خدمات
                 const services = Array.isArray(formData?.services)
                   ? formData.services
                   : [];
 
-                // فاکتور
                 const invoice = formData?.invoiceDetails || null;
 
                 return (
                   <div className="space-y-4">
-                    {/* بخش خدمات ارائه شده */}
                     {services.length > 0 && (
                       <div className="border border-slate-200 rounded-lg p-3 bg-white space-y-2">
                         <h3 className="font-bold text-xs text-slate-700 flex items-center gap-1.5">
@@ -637,7 +663,6 @@ export default function ArchivesManagement() {
                       </div>
                     )}
 
-                    {/* خلاصه وضعیت فاکتور و اطلاعات کلی */}
                     {formData && (
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs border border-slate-200 rounded-lg p-3 bg-slate-50/50">
                         <div>
@@ -676,7 +701,6 @@ export default function ArchivesManagement() {
                       </div>
                     )}
 
-                    {/* بخش تاریخچه فعالیت کاربران (Audit Trail) */}
                     {auditTrail.length > 0 && (
                       <div className="pt-2 border-t border-slate-200">
                         <h3 className="font-bold text-xs text-slate-700 mb-2">
@@ -699,7 +723,6 @@ export default function ArchivesManagement() {
                             </TableHeader>
                             <TableBody>
                               {auditTrail.map((log, idx) => {
-                                // استخراج جامع نام کاربر
                                 const userName =
                                   (typeof log === "string" ? log : null) ||
                                   log.user_name ||
@@ -720,7 +743,6 @@ export default function ArchivesManagement() {
                                     : null) ||
                                   "کاربر سیستم";
 
-                                // استخراج عنوان عملیات
                                 const actionTitle =
                                   log.action ||
                                   log.action_title ||
@@ -729,7 +751,6 @@ export default function ArchivesManagement() {
                                   log.title ||
                                   "ثبت خدمت موقت";
 
-                                // استخراج زمان ثبت
                                 const logTime =
                                   log.created_at ||
                                   log.at ||
@@ -818,7 +839,7 @@ export default function ArchivesManagement() {
         )}
 
         {/* مودال حذف گروهی */}
-        {showBulkModal && (
+        {showBulkModal && isAdmin && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
               <div className="flex items-center justify-between border-b pb-3">

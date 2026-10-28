@@ -102,10 +102,13 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          {/* بایگانی و سوابق: ادمین و هر دو سطح منشی (بدون دسترسی حذف) */}
           <Route
             path="/archive"
             element={
-              <ProtectedRoute allowedRoles={["admin"]}>
+              <ProtectedRoute
+                allowedRoles={["admin", "staff_level_1", "staff_level_2"]}
+              >
                 <ArchivesManagement />
               </ProtectedRoute>
             }
