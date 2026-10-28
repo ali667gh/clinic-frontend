@@ -38,7 +38,8 @@ export default function Dashboard({ onLogout }) {
   const isSecretary1 = user.role === "staff_level_1";
   const isSecretary2 = user.role === "staff_level_2";
 
-  // مدیریت ارسالی‌ها: فقط ادمین و منشی سطح یک
+  // دسترسی‌ها
+  const canAccessArchive = isAdmin || isSecretary1 || isSecretary2;
   const canDispatch = isAdmin || isSecretary1;
 
   const getRoleTitle = (role) => {
@@ -66,6 +67,14 @@ export default function Dashboard({ onLogout }) {
       showAccessDenied(
         `شما به بخش «${title}» دسترسی ندارید. این بخش فقط برای مدیر سیستم تعریف شده است.`,
       );
+    }
+  };
+
+  const handleArchiveClick = () => {
+    if (canAccessArchive) {
+      navigate("/archive");
+    } else {
+      showAccessDenied("شما به بخش «بایگانی و سوابق» دسترسی ندارید.");
     }
   };
 
@@ -179,7 +188,7 @@ export default function Dashboard({ onLogout }) {
             {!isAdmin && (
               <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-full flex items-center gap-1">
                 <Lock className="w-3 h-3" />
-                دسترسی مدیر لازم است
+                برخی بخش‌ها نیازمند دسترسی مدیر هستند
               </span>
             )}
           </div>
@@ -276,13 +285,11 @@ export default function Dashboard({ onLogout }) {
               </div>
             </div>
 
-            {/* بایگانی و سوابق */}
+            {/* بایگانی و سوابق (دسترسی آزاد برای منشی و ادمین) */}
             <div
-              onClick={() =>
-                handleAdminOnlyClick("/archive", "بایگانی و سوابق")
-              }
+              onClick={handleArchiveClick}
               className={`group bg-white p-5 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                isAdmin
+                canAccessArchive
                   ? "border-slate-100 hover:border-amber-200 hover:shadow-lg hover:shadow-amber-500/10"
                   : "border-slate-200/70 opacity-80"
               }`}
@@ -291,7 +298,7 @@ export default function Dashboard({ onLogout }) {
                 <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
                   <FolderArchive className="w-5 h-5" />
                 </div>
-                {!isAdmin ? (
+                {!canAccessArchive ? (
                   <Lock className="w-4 h-4 text-slate-400" />
                 ) : (
                   <ChevronLeft className="w-4 h-4 text-slate-300 group-hover:text-amber-500" />
@@ -374,7 +381,7 @@ export default function Dashboard({ onLogout }) {
               </div>
             </div>
 
-            {/* مدیریت ارسالی‌ها (فقط ادمین و منشی سطح یک) */}
+            {/* مدیریت ارسالی‌ها */}
             <div
               className={`bg-white p-6 rounded-2xl border transition-all flex items-center justify-between ${
                 canDispatch
