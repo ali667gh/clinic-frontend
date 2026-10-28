@@ -22,9 +22,17 @@ export default function Dashboard({ onLogout }) {
   const [currentDate, setCurrentDate] = useState("");
   const [accessDeniedMsg, setAccessDeniedMsg] = useState("");
 
-  const user = JSON.parse(
-    localStorage.getItem("user") || '{"name": "کاربر سیستم", "role": "admin"}',
-  );
+  // پارس امن اطلاعات کاربر از localStorage جهت جلوگیری از سفید شدن صفحه
+  const [user] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem("user");
+      return savedUser
+        ? JSON.parse(savedUser)
+        : { name: "کاربر سیستم", role: "" };
+    } catch {
+      return { name: "کاربر سیستم", role: "" };
+    }
+  });
 
   const isAdmin = user.role === "admin";
   const isSecretary1 = user.role === "staff_level_1";
