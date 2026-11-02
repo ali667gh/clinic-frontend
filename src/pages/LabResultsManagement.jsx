@@ -35,6 +35,30 @@ const SIGNATURE_STAMP_WIDTH_MM = 50;
 // پیام خطای خدماتی که پیوست فایل برایشان اجباری است
 const REQUIRED_ATTACHMENT_MSG = "برای این خدمت نیاز به فایل ضمیمه است";
 
+// تبدیل ارقام فارسی/عربی و قالب‌های رایج شماره موبایل به 09xxxxxxxxx
+const normalizeMobile = (value) => {
+  let mobile = String(value ?? "")
+    .trim()
+    .replace(/[۰-۹]/g, (digit) => "۰۱۲۳۴۵۶۷۸۹".indexOf(digit))
+    .replace(/[٠-٩]/g, (digit) => "٠١٢٣٤٥٦٧٨٩".indexOf(digit))
+    .replace(/[\s\-()]/g, "");
+
+  if (mobile.startsWith("+98")) {
+    mobile = "0" + mobile.slice(3);
+  } else if (mobile.startsWith("0098")) {
+    mobile = "0" + mobile.slice(4);
+  } else if (/^98\d{10}$/.test(mobile)) {
+    mobile = "0" + mobile.slice(2);
+  } else if (/^9\d{9}$/.test(mobile)) {
+    mobile = "0" + mobile;
+  }
+
+  return mobile;
+};
+
+// شمارهٔ خالی مجاز است؛ شمارهٔ واردشده باید موبایل معتبر ایران باشد.
+const isValidIranMobile = (mobile) => !mobile || /^09\d{9}$/.test(mobile);
+
 // تابع کمکی جامع برای خواندن دقیق اطلاعات کاربر لاگین‌شده از LocalStorage
 const getCurrentUser = () => {
   try {
@@ -1179,6 +1203,24 @@ export default function LabResultsManagement() {
       return;
     }
 
+    // اعتبارسنجی موبایل پیش از فعال‌کردن قفل ارسال
+    const patientObj = temporaryQueue[0]?.patient;
+
+    if (!patientObj) {
+      toast.error("اطلاعات بیمار در لیست موقت یافت نشد.");
+      return;
+    }
+
+    const rawMobile = patientObj.mobile || patientObj.phone || "";
+    const cleanedMobile = normalizeMobile(rawMobile);
+
+    if (!isValidIranMobile(cleanedMobile)) {
+      toast.error(
+        "شماره موبایل بیمار معتبر نیست (باید با 09 شروع شده و ۱۱ رقم باشد). ابتدا آن را در مدیریت بیماران اصلاح کنید.",
+      );
+      return;
+    }
+
     isSubmittingRef.current = true;
     setIsSubmitting(true);
 
@@ -1211,10 +1253,7 @@ export default function LabResultsManagement() {
       formData.append("patient_name", patientName);
       formData.append("national_code", nationalCode);
       formData.append("file_number", primaryPatient.file_number || "");
-      formData.append(
-        "mobile",
-        primaryPatient.mobile || primaryPatient.phone || "",
-      );
+      formData.append("mobile", cleanedMobile);
       formData.append("issued_at", new Date().toISOString());
       formData.append("is_locked", "1");
 
@@ -1565,7 +1604,7 @@ export default function LabResultsManagement() {
                               </div>
                               {phone && (
                                 <span className="text-xs font-mono text-slate-500">
-                                  {phone}
+                                  {normalizeMobile(phone)}
                                 </span>
                               )}
                             </div>
