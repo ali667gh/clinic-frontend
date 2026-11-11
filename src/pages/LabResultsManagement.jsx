@@ -1148,12 +1148,25 @@ export default function LabResultsManagement() {
     };
   };
   // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
-  // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
   const triggerInternalPrint = async (archiveId) => {
     if (!archiveId) return;
 
+    let printWindow = null;
+
     try {
       const token = localStorage.getItem("token");
+
+      // پنجره را همین‌جا باز کن — قبل از async، تا popup blocker جلوگیری نکند
+      printWindow = window.open(
+        "about:blank",
+        "_blank",
+        "width=700,height=900",
+      );
+      if (!printWindow) {
+        toast.error("مرورگر جلوی popup را گرفت — لطفاً اجازه دهید");
+        return;
+      }
+
       const res = await fetch(`/api/archives/${archiveId}/internal-print`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1163,36 +1176,40 @@ export default function LabResultsManagement() {
         },
       });
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        printWindow.close();
+        throw new Error(`HTTP ${res.status}`);
+      }
 
       const html = await res.text();
-      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-      const blobUrl = URL.createObjectURL(blob);
 
-      const frame = document.createElement("iframe");
-      frame.style.cssText =
-        "position:fixed;width:0;height:0;border:none;visibility:hidden;left:-9999px;top:-9999px;";
-      frame.src = blobUrl;
-      document.body.appendChild(frame);
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
 
-      frame.onload = () => {
-        try {
-          frame.contentWindow?.focus();
-          frame.contentWindow?.print();
-        } catch {
-          window.open(blobUrl, "_blank");
-        }
-
-        const cleanup = () => {
-          URL.revokeObjectURL(blobUrl);
-          frame.remove();
-          frame.removeEventListener("afterprint", cleanup);
-        };
-        frame.contentWindow?.addEventListener("afterprint", cleanup);
-        setTimeout(cleanup, 60_000);
+      // بعد از close کردن document، منتظر render کامل بمان
+      const doPrint = () => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.onafterprint = () => printWindow.close();
+        setTimeout(() => {
+          try {
+            printWindow.close();
+          } catch {}
+        }, 60_000);
       };
+
+      if (printWindow.document.readyState === "complete") {
+        setTimeout(doPrint, 300);
+      } else {
+        printWindow.addEventListener("load", () => setTimeout(doPrint, 300));
+      }
     } catch (err) {
       console.error("triggerInternalPrint failed:", err);
+      if (printWindow)
+        try {
+          printWindow.close();
+        } catch {}
       toast.error("خطا در چاپ فاکتور داخلی");
     }
   };
