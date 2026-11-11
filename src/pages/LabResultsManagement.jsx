@@ -1148,25 +1148,25 @@ export default function LabResultsManagement() {
     };
   };
   // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
+  // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
   const triggerInternalPrint = async (archiveId) => {
     if (!archiveId) return;
 
     try {
-      const response = await fetch(
-        `/api/archives/${archiveId}/internal-print`,
-        {
-          credentials: "include",
-          headers: {
-            Accept: "text/html",
-            "X-Requested-With": "XMLHttpRequest",
-          },
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/archives/${archiveId}/internal-print`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "text/html",
+          "X-CSRF-TOKEN":
+            document.querySelector('meta[name="csrf-token"]')?.content ?? "",
         },
-      );
+      });
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const html = await response.text();
-      const blob = new Blob([html], { type: "text/html; charset=utf-8" });
+      const html = await res.text();
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
       const blobUrl = URL.createObjectURL(blob);
 
       const frame = document.createElement("iframe");
@@ -1176,19 +1176,24 @@ export default function LabResultsManagement() {
       document.body.appendChild(frame);
 
       frame.onload = () => {
-        frame.contentWindow?.focus();
-        frame.contentWindow?.print();
+        try {
+          frame.contentWindow?.focus();
+          frame.contentWindow?.print();
+        } catch {
+          window.open(blobUrl, "_blank");
+        }
 
         const cleanup = () => {
-          frame.remove();
           URL.revokeObjectURL(blobUrl);
+          frame.remove();
+          frame.removeEventListener("afterprint", cleanup);
         };
         frame.contentWindow?.addEventListener("afterprint", cleanup);
         setTimeout(cleanup, 60_000);
       };
     } catch (err) {
-      console.error("Internal print failed:", err);
-      window.open(`/api/archives/${archiveId}/internal-print`, "_blank");
+      console.error("triggerInternalPrint failed:", err);
+      toast.error("خطا در چاپ فاکتور داخلی");
     }
   };
 
