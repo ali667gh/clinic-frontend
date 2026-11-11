@@ -1148,48 +1148,40 @@ export default function LabResultsManagement() {
     };
   };
   // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
+  // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
   const triggerInternalPrint = async (archiveId) => {
     if (!archiveId) return;
-
-    const src = `/api/archives/${archiveId}/internal-pdf`;
-
     try {
-      // اگر توکن در localStorage است:
-      const token = localStorage.getItem("token"); // یا هر کلیدی که اپ استفاده می‌کند
-      // اگر از axios instance با interceptor استفاده می‌کنید، می‌توانید از آن الگو بگیرید
-
-      const res = await fetch(src, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await api.get(`/archives/${archiveId}/internal-pdf`, {
+        responseType: "arraybuffer",
       });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
 
       const frame = document.createElement("iframe");
       frame.style.cssText =
         "position:fixed;width:0;height:0;border:none;visibility:hidden;left:-9999px;top:-9999px;";
-      frame.src = blobUrl;
+      frame.src = url;
       document.body.appendChild(frame);
 
       frame.onload = () => {
-        frame.contentWindow?.focus();
-        frame.contentWindow?.print();
-
+        try {
+          frame.contentWindow?.focus();
+          frame.contentWindow?.print();
+        } catch {
+          window.open(url, "_blank");
+        }
         const cleanup = () => {
           frame.remove();
-          URL.revokeObjectURL(blobUrl); // آزاد کردن حافظه
-          frame.removeEventListener("afterprint", cleanup);
+          URL.revokeObjectURL(url);
         };
         frame.contentWindow?.addEventListener("afterprint", cleanup);
         setTimeout(cleanup, 60_000);
       };
     } catch (err) {
-      console.error("internal print failed:", err);
-      window.open(src, "_blank"); // fallback
+      console.error("triggerInternalPrint failed:", err);
     }
-  };  
+  };
 
   // کلید عملیات جامع (Master Action): ساخت فاکتور -> ثبت نهایی -> پرینت خودکار
   const handleMasterSubmitAndPrint = async () => {
