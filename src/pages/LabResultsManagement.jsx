@@ -1149,68 +1149,51 @@ export default function LabResultsManagement() {
   };
   // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
   const triggerInternalPrint = async (archiveId) => {
-    if (!archiveId) return;
-
-    let printWindow = null;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No auth token found");
+      return;
+    }
 
     try {
-      const token = localStorage.getItem("token");
-
-      // پنجره را همین‌جا باز کن — قبل از async، تا popup blocker جلوگیری نکند
-      printWindow = window.open(
-        "about:blank",
-        "_blank",
-        "width=700,height=900",
-      );
-      if (!printWindow) {
-        toast.error("مرورگر جلوی popup را گرفت — لطفاً اجازه دهید");
-        return;
-      }
-
       const res = await fetch(`/api/archives/${archiveId}/internal-print`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "text/html",
-          "X-CSRF-TOKEN":
-            document.querySelector('meta[name="csrf-token"]')?.content ?? "",
         },
       });
 
       if (!res.ok) {
-        printWindow.close();
-        throw new Error(`HTTP ${res.status}`);
+        console.error("Print endpoint error:", res.status, await res.text());
+        return;
       }
 
       const html = await res.text();
 
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
-
-      // بعد از close کردن document، منتظر render کامل بمان
-      const doPrint = () => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.onafterprint = () => printWindow.close();
-        setTimeout(() => {
-          try {
-            printWindow.close();
-          } catch {}
-        }, 60_000);
-      };
-
-      if (printWindow.document.readyState === "complete") {
-        setTimeout(doPrint, 300);
-      } else {
-        printWindow.addEventListener("load", () => setTimeout(doPrint, 300));
+      const popup = window.open(
+        "about:blank",
+        "_blank",
+        "width=600,height=850",
+      );
+      if (!popup) {
+        alert("لطفاً popup blocker را غیرفعال کنید");
+        return;
       }
+
+      popup.document.open();
+      popup.document.write(html);
+      popup.document.close();
+
+      // صبر می‌کنیم تا fonts/styles لود بشن
+      popup.onload = () => {
+        setTimeout(() => {
+          popup.focus();
+          popup.print();
+          popup.onafterprint = () => popup.close();
+        }, 400);
+      };
     } catch (err) {
       console.error("triggerInternalPrint failed:", err);
-      if (printWindow)
-        try {
-          printWindow.close();
-        } catch {}
-      toast.error("خطا در چاپ فاکتور داخلی");
     }
   };
 
