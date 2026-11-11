@@ -1148,29 +1148,29 @@ export default function LabResultsManagement() {
     };
   };
   // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
-  // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
   const triggerInternalPrint = async (archiveId) => {
     if (!archiveId) return;
     try {
-      const response = await api.get(`/archives/${archiveId}/internal-pdf`, {
-        responseType: "arraybuffer",
+      const response = await api.get(`/archives/${archiveId}/internal-html`, {
+        responseType: "text",
       });
-      const blob = new Blob([response.data], { type: "application/pdf" });
+
+      const blob = new Blob([response.data], {
+        type: "text/html; charset=utf-8",
+      });
       const url = URL.createObjectURL(blob);
 
       const frame = document.createElement("iframe");
+      // 1px به جای 0 — بعضی مرورگرها iframe با 0 ابعاد رو render نمی‌کنن
       frame.style.cssText =
-        "position:fixed;width:0;height:0;border:none;visibility:hidden;left:-9999px;top:-9999px;";
+        "position:fixed;width:1px;height:1px;border:none;left:-9999px;top:-9999px;";
       frame.src = url;
       document.body.appendChild(frame);
 
       frame.onload = () => {
-        try {
-          frame.contentWindow?.focus();
-          frame.contentWindow?.print();
-        } catch {
-          window.open(url, "_blank");
-        }
+        frame.contentWindow?.focus();
+        frame.contentWindow?.print();
+
         const cleanup = () => {
           frame.remove();
           URL.revokeObjectURL(url);
