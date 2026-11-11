@@ -1147,6 +1147,31 @@ export default function LabResultsManagement() {
       created_at: new Date().toISOString(),
     };
   };
+  // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
+  const triggerInternalPrint = (archiveId) => {
+    if (!archiveId) return;
+    const src = `/api/archives/${archiveId}/internal-pdf`;
+    const frame = document.createElement("iframe");
+    frame.style.cssText =
+      "position:fixed;width:0;height:0;border:none;visibility:hidden;left:-9999px;top:-9999px;";
+    frame.src = src;
+    document.body.appendChild(frame);
+
+    frame.onload = () => {
+      try {
+        frame.contentWindow?.focus();
+        frame.contentWindow?.print();
+      } catch {
+        window.open(src, "_blank");
+      }
+      const cleanup = () => {
+        frame.remove();
+        frame.removeEventListener("afterprint", cleanup);
+      };
+      frame.contentWindow?.addEventListener("afterprint", cleanup);
+      setTimeout(cleanup, 60_000);
+    };
+  };
 
   // کلید عملیات جامع (Master Action): ساخت فاکتور -> ثبت نهایی -> پرینت خودکار
   const handleMasterSubmitAndPrint = async () => {
@@ -1418,6 +1443,7 @@ export default function LabResultsManagement() {
       // ۴. چاپ فوری و خودکار جوابدهی بلافاصله بعد از ثبت موفقیت‌آمیز
       if (processedFiles.length > 0) {
         printRecordPdfs(newFinalRecord);
+        triggerInternalPrint(createdArchiveId);
       }
 
       // ۵. پاکسازی درفت‌های موقت
