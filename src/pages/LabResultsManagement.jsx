@@ -1150,21 +1150,29 @@ export default function LabResultsManagement() {
   // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
   const triggerInternalPrint = async (archiveId) => {
     if (!archiveId) return;
-    try {
-      const response = await api.get(`/archives/${archiveId}/internal-html`, {
-        responseType: "text",
-      });
 
-      const blob = new Blob([response.data], {
-        type: "text/html; charset=utf-8",
-      });
-      const url = URL.createObjectURL(blob);
+    try {
+      const response = await fetch(
+        `/api/archives/${archiveId}/internal-print`,
+        {
+          credentials: "include",
+          headers: {
+            Accept: "text/html",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+        },
+      );
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const html = await response.text();
+      const blob = new Blob([html], { type: "text/html; charset=utf-8" });
+      const blobUrl = URL.createObjectURL(blob);
 
       const frame = document.createElement("iframe");
-      // 1px به جای 0 — بعضی مرورگرها iframe با 0 ابعاد رو render نمی‌کنن
       frame.style.cssText =
-        "position:fixed;width:1px;height:1px;border:none;left:-9999px;top:-9999px;";
-      frame.src = url;
+        "position:fixed;width:0;height:0;border:none;visibility:hidden;left:-9999px;top:-9999px;";
+      frame.src = blobUrl;
       document.body.appendChild(frame);
 
       frame.onload = () => {
@@ -1173,13 +1181,14 @@ export default function LabResultsManagement() {
 
         const cleanup = () => {
           frame.remove();
-          URL.revokeObjectURL(url);
+          URL.revokeObjectURL(blobUrl);
         };
         frame.contentWindow?.addEventListener("afterprint", cleanup);
         setTimeout(cleanup, 60_000);
       };
     } catch (err) {
-      console.error("triggerInternalPrint failed:", err);
+      console.error("Internal print failed:", err);
+      window.open(`/api/archives/${archiveId}/internal-print`, "_blank");
     }
   };
 
