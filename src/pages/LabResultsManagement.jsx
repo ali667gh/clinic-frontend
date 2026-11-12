@@ -1156,7 +1156,7 @@ export default function LabResultsManagement() {
     }
 
     try {
-      const res = await fetch(`/api/archives/${archiveId}/internal-print`, {
+      const res = await fetch(`/api/archives/${archiveId}/internal`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "text/html",
