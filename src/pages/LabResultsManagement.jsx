@@ -1151,7 +1151,7 @@ export default function LabResultsManagement() {
   const triggerInternalPrint = async (archiveId) => {
     try {
       const { data: html } = await api.get(
-        `/archives/${archiveId}/internal-print`,
+        `/archives/${archiveId}/internal`,
         { responseType: "text", headers: { Accept: "text/html" } },
       );
 
