@@ -1150,31 +1150,32 @@ export default function LabResultsManagement() {
   // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
   const triggerInternalPrint = async (archiveId) => {
     try {
-      const { data: html } = await api.get(
-        `/archives/${archiveId}/internal`,
-        { responseType: "text", headers: { Accept: "text/html" } },
-      );
+      const { data: html } = await api.get(`/archives/${archiveId}/internal`, {
+        responseType: "text",
+        headers: { Accept: "text/html" },
+      });
+
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
 
       const iframe = document.createElement("iframe");
       iframe.style.cssText =
         "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
       document.body.appendChild(iframe);
 
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(html);
-      doc.close();
-
-      const doPrint = async () => {
+      iframe.onload = async () => {
         try {
           await iframe.contentWindow.document.fonts?.ready;
         } catch (_) {}
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
-        setTimeout(() => iframe.remove(), 1500);
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+          iframe.remove();
+        }, 1500);
       };
 
-      setTimeout(doPrint, 500);
+      iframe.src = url;
     } catch (err) {
       console.error("triggerInternalPrint failed:", err);
     }
