@@ -1149,35 +1149,15 @@ export default function LabResultsManagement() {
   };
   // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
   const triggerInternalPrint = async (archiveId) => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No auth token found");
-      return;
-    }
-
     try {
-      const res = await fetch(`/api/archives/${archiveId}/internal`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "text/html",
-        },
-      });
+      const { data: html } = await api.get(
+        `/archives/${archiveId}/internal-print`,
+        { responseType: "text", headers: { Accept: "text/html" } },
+      );
 
-      if (!res.ok) {
-        console.error("Print endpoint error:", res.status, await res.text());
-        return;
-      }
-
-      const html = await res.text();
-
-      // iframe مخفی
       const iframe = document.createElement("iframe");
-      iframe.style.position = "fixed";
-      iframe.style.right = "0";
-      iframe.style.bottom = "0";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "0";
+      iframe.style.cssText =
+        "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
       document.body.appendChild(iframe);
 
       const doc = iframe.contentWindow.document;
@@ -1185,22 +1165,15 @@ export default function LabResultsManagement() {
       doc.write(html);
       doc.close();
 
-      // صبر برای لود فونت‌ها و استایل‌ها
       const doPrint = async () => {
         try {
-          if (iframe.contentWindow.document.fonts?.ready) {
-            await iframe.contentWindow.document.fonts.ready;
-          }
+          await iframe.contentWindow.document.fonts?.ready;
         } catch (_) {}
-
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
-
-        // پاک‌سازی بعد از پرینت
         setTimeout(() => iframe.remove(), 1500);
       };
 
-      // کمی تأخیر تا DOM رندر شود
       setTimeout(doPrint, 500);
     } catch (err) {
       console.error("triggerInternalPrint failed:", err);
