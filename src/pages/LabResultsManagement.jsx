@@ -1170,28 +1170,38 @@ export default function LabResultsManagement() {
 
       const html = await res.text();
 
-      const popup = window.open(
-        "about:blank",
-        "_blank",
-        "width=600,height=850",
-      );
-      if (!popup) {
-        alert("لطفاً popup blocker را غیرفعال کنید");
-        return;
-      }
+      // iframe مخفی
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      document.body.appendChild(iframe);
 
-      popup.document.open();
-      popup.document.write(html);
-      popup.document.close();
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
 
-      // صبر می‌کنیم تا fonts/styles لود بشن
-      popup.onload = () => {
-        setTimeout(() => {
-          popup.focus();
-          popup.print();
-          popup.onafterprint = () => popup.close();
-        }, 400);
+      // صبر برای لود فونت‌ها و استایل‌ها
+      const doPrint = async () => {
+        try {
+          if (iframe.contentWindow.document.fonts?.ready) {
+            await iframe.contentWindow.document.fonts.ready;
+          }
+        } catch (_) {}
+
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+
+        // پاک‌سازی بعد از پرینت
+        setTimeout(() => iframe.remove(), 1500);
       };
+
+      // کمی تأخیر تا DOM رندر شود
+      setTimeout(doPrint, 500);
     } catch (err) {
       console.error("triggerInternalPrint failed:", err);
     }
