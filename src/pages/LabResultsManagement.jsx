@@ -360,6 +360,83 @@ const sealPdfFileWithDoctorStamp = async (pdfFile, doctor, options = {}) => {
     return pdfFile;
   }
 };
+// ───────────────── helper مشترک: چاپ یک PDF (Blob) ─────────────────
+const printPdfBlob = (blob) =>
+  new Promise((resolve) => {
+    const url = URL.createObjectURL(blob);
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText =
+      "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+    iframe.src = url;
+
+    iframe.onload = () => {
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          console.error("print failed:", e);
+        }
+        // فرصت بده دیالوگ/صف چاپ باز شود، بعد پاک‌سازی و آزاد کردن نوبت بعدی
+        setTimeout(() => {
+          try {
+            URL.revokeObjectURL(url);
+            iframe.remove();
+          } catch {}
+          resolve();
+        }, 2500);
+      }, 300);
+    };
+
+    document.body.appendChild(iframe);
+  });
+
+// ───────────────── چاپ PDFهای پیوست (فاکتور رسمی...) — پشت سر هم ─────────────────
+const printRecordPdfs = async (record) => {
+  try {
+    const files = record?.attachedPdfFiles || [];
+    if (files.length === 0) {
+      toast.info(
+        "فایل پیوست آماده چاپ برای این رکورد یافت نشد (پرونده در بایگانی ذخیره شد).",
+      );
+      return;
+    }
+
+    const toastId = toast.loading("در حال آماده‌سازی و ارسال به پرینتر...");
+    for (const pdfFile of files) {
+      const arrayBuf = await pdfFile.arrayBuffer();
+      await printPdfBlob(new Blob([arrayBuf], { type: "application/pdf" }));
+    }
+    toast.dismiss(toastId);
+  } catch (err) {
+    console.error("خطا در پرینت:", err);
+    toast.error("خطا در باز کردن دیالوگ پرینت");
+  }
+};
+
+// ───────────────── چاپ فاکتور داخلی (PDF تک‌صفحه، بدون مهر) ─────────────────
+const triggerInternalPrint = async (archiveId) => {
+  try {
+    const { data } = await api.get(`/archives/${archiveId}/internal-pdf`, {
+      responseType: "blob",
+      headers: { Accept: "application/pdf" },
+    });
+
+    if (data?.type !== "application/pdf") {
+      console.error("Response is not a PDF:", data?.type);
+      return;
+    }
+    await printPdfBlob(data);
+  } catch (err) {
+    console.error("triggerInternalPrint failed:", err);
+  }
+};
+
+// ───────────────── محل فراخوانی ─────────────────
+// if (processedFiles.length > 0) {
+//   await printRecordPdfs(newFinalRecord);
+//   await triggerInternalPrint(createdArchiveId);
+// }
 
 // دریافت تصویر سربرگ یک خدمت از سرور (API احرازهویت‌شده)
 const fetchServiceHeaderBytes = async (serviceDbId) => {
@@ -1051,56 +1128,6 @@ export default function LabResultsManagement() {
       toast.error("خطا در حذف از سرور");
     }
   };
-
-  // چاپ فایل‌های یک رکورد با Iframe
-  const printRecordPdfs = async (record) => {
-    try {
-      const files = record?.attachedPdfFiles || [];
-      if (files.length === 0) {
-        toast.info(
-          "فایل پیوست آماده چاپ برای این رکورد یافت نشد (پرونده در بایگانی ذخیره شد).",
-        );
-        return;
-      }
-
-      const toastId = toast.loading("در حال آماده‌سازی و ارسال به پرینتر...");
-      for (const pdfFile of files) {
-        const arrayBuf = await pdfFile.arrayBuffer();
-        const blob = new Blob([arrayBuf], { type: "application/pdf" });
-        const blobUrl = URL.createObjectURL(blob);
-
-        const printIframe = document.createElement("iframe");
-        printIframe.style.position = "fixed";
-        printIframe.style.right = "0";
-        printIframe.style.bottom = "0";
-        printIframe.style.width = "0";
-        printIframe.style.height = "0";
-        printIframe.style.border = "0";
-        printIframe.src = blobUrl;
-
-        document.body.appendChild(printIframe);
-
-        printIframe.onload = () => {
-          setTimeout(() => {
-            toast.dismiss(toastId);
-            printIframe.contentWindow?.focus();
-            printIframe.contentWindow?.print();
-
-            setTimeout(() => {
-              try {
-                URL.revokeObjectURL(blobUrl);
-                document.body.removeChild(printIframe);
-              } catch {}
-            }, 1500);
-          }, 300);
-        };
-      }
-    } catch (err) {
-      console.error("خطا در پرینت:", err);
-      toast.error("خطا در باز کردن دیالوگ پرینت");
-    }
-  };
-
   // ساخت خودکار و پشت‌صحنه دیتای فاکتور از اقلام صف موقت
   const generateAutoInvoiceData = () => {
     const items = [];
@@ -1146,39 +1173,6 @@ export default function LabResultsManagement() {
       status: "paid",
       created_at: new Date().toISOString(),
     };
-  };
-  // ───── چاپ داخلی A5 (invoice داخلی برای مرکز) ─────
-  const triggerInternalPrint = async (archiveId) => {
-    try {
-      const { data: html } = await api.get(`/archives/${archiveId}/internal`, {
-        responseType: "text",
-        headers: { Accept: "text/html" },
-      });
-
-      const blob = new Blob([html], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-
-      const iframe = document.createElement("iframe");
-      iframe.style.cssText =
-        "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
-      document.body.appendChild(iframe);
-
-      iframe.onload = async () => {
-        try {
-          await iframe.contentWindow.document.fonts?.ready;
-        } catch (_) {}
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-          iframe.remove();
-        }, 1500);
-      };
-
-      iframe.src = url;
-    } catch (err) {
-      console.error("triggerInternalPrint failed:", err);
-    }
   };
 
   // کلید عملیات جامع (Master Action): ساخت فاکتور -> ثبت نهایی -> پرینت خودکار
@@ -1450,9 +1444,11 @@ export default function LabResultsManagement() {
 
       // ۴. چاپ فوری و خودکار جوابدهی بلافاصله بعد از ثبت موفقیت‌آمیز
       if (processedFiles.length > 0) {
-        printRecordPdfs(newFinalRecord);
-        triggerInternalPrint(createdArchiveId);
+        (async () => {
+          await printRecordPdfs(newFinalRecord);
+        })();
       }
+      await triggerInternalPrint(createdArchiveId);
 
       // ۵. پاکسازی درفت‌های موقت
       await Promise.allSettled(
