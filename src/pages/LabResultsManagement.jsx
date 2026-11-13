@@ -417,7 +417,7 @@ const printRecordPdfs = async (record) => {
 // ───────────────── چاپ فاکتور داخلی (PDF تک‌صفحه، بدون مهر) ─────────────────
 const triggerInternalPrint = async (archiveId) => {
   try {
-    const { data } = await api.get(`/archives/${archiveId}/internal-pdf`, {
+    const { data } = await api.get(`/archives/${archiveId}/internal`, {
       responseType: "blob",
       headers: { Accept: "application/pdf" },
     });
