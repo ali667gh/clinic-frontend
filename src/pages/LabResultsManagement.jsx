@@ -1443,11 +1443,7 @@ export default function LabResultsManagement() {
       };
 
       // ۴. چاپ فوری و خودکار جوابدهی بلافاصله بعد از ثبت موفقیت‌آمیز
-      if (processedFiles.length > 0) {
-        (async () => {
-          await printRecordPdfs(newFinalRecord);
-        })();
-      }
+
       await triggerInternalPrint(createdArchiveId);
 
       // ۵. پاکسازی درفت‌های موقت
